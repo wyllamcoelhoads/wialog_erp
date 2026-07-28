@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../auth/presentation/pages/login_page.dart';
+import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -9,65 +10,59 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  // Variável para controlar qual item do menu está selecionado
   int _selectedIndex = 0;
 
-  List<Widget> get _pages => [
-    _buildOverviewTab(),
-    const Center(
-      child: Text(
-        'Módulo de Frotas (Em breve)',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
-      child: Text(
-        'Módulo Financeiro (Em breve)',
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-  ];
+  // Renderiza a tela da direita com base no menu selecionado
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildVisaoGeral();
+      case 1:
+        return const Center(child: Text('Módulo de Frotas (Em breve)'));
+      case 2:
+        return const FinancePage(); // Chama a nossa nova tela financeira!
+      default:
+        return _buildVisaoGeral();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(
+        0xFFF4F6F8,
+      ), // Fundo cinza bem claro (cara de sistema)
       body: Row(
         children: [
-          // 1. Menu Lateral (Sidebar)
+          // Menu Lateral
           Container(
-            width: 260,
-            color: Theme.of(context).colorScheme.primary,
+            width: 250,
+            color: const Color(0xFF5D6D7E), // Azul corporativo
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.local_shipping, size: 64, color: Colors.white),
-                const SizedBox(height: 16),
+                // Logo e Nome
+                const Icon(Icons.local_shipping, size: 48, color: Colors.white),
+                const SizedBox(height: 10),
                 const Text(
                   'WiaLog ERP',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 40),
 
-                _buildMenuItem(Icons.dashboard_outlined, 'Visão Geral', 0),
-                _buildMenuItem(Icons.directions_car_outlined, 'Frotas', 1),
-                _buildMenuItem(
-                  Icons.account_balance_wallet_outlined,
-                  'Financeiro',
-                  2,
-                ),
+                // Itens de Navegação
+                _buildMenuItem(Icons.dashboard, 'Visão Geral', 0),
+                _buildMenuItem(Icons.directions_car, 'Frotas', 1),
+                _buildMenuItem(Icons.account_balance_wallet, 'Financeiro', 2),
 
                 const Spacer(),
-
-                const Divider(color: Colors.white24, height: 1),
+                // Botão de Sair
                 ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
                   leading: const Icon(Icons.logout, color: Colors.white70),
                   title: const Text(
                     'Sair',
@@ -79,102 +74,79 @@ class _DashboardPageState extends State<DashboardPage> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
               ],
             ),
           ),
 
-          // 2. Área de Conteúdo Principal
-          Expanded(
-            child: Container(
-              color: Colors.grey.shade100,
-              child: _pages[_selectedIndex],
-            ),
-          ),
+          // Área Principal Direita (Muda conforme o menu)
+          Expanded(child: _buildBody()),
         ],
       ),
     );
   }
 
-  // Método que constrói a aba de Visão Geral com base no RF08
-  Widget _buildOverviewTab() {
-    return SingleChildScrollView(
+  // Componente para desenhar os botões do menu lateral
+  Widget _buildMenuItem(IconData icon, String title, int index) {
+    final isSelected = _selectedIndex == index;
+
+    return Container(
+      color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+      child: ListTile(
+        leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white70,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
+    );
+  }
+
+  // A Visão Geral (Dashboard) que você já tinha feito
+  Widget _buildVisaoGeral() {
+    return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Visão Geral',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Acompanhamento em tempo real da sua operação (Julho/2026).',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2C3E50),
+            ),
           ),
           const SizedBox(height: 32),
-
-          // Grid com os Indicadores (KPIs)
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: _buildKpiCard(
-                  'Veículos Ativos',
-                  '12',
-                  Icons.local_shipping,
-                  Colors.blue.shade700,
-                ),
+              _buildKpiCard(
+                'Veículos Ativos',
+                '12',
+                Icons.local_shipping,
+                Colors.blue,
               ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: _buildKpiCard(
-                  'Em Manutenção',
-                  '3',
-                  Icons.build,
-                  Colors.orange.shade700,
-                ),
+              _buildKpiCard('Em Manutenção', '2', Icons.build, Colors.orange),
+              _buildKpiCard(
+                'A Pagar (Mês)',
+                'R\$ 14.500',
+                Icons.arrow_downward,
+                Colors.red,
               ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: _buildKpiCard(
-                  'A Pagar (Mês)',
-                  'R\$ 15.420',
-                  Icons.arrow_circle_down,
-                  Colors.red.shade700,
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: _buildKpiCard(
-                  'A Receber (Mês)',
-                  'R\$ 42.900',
-                  Icons.arrow_circle_up,
-                  Colors.green.shade700,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 40),
-
-          // Área para futuros gráficos ou tabelas
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 2,
-                child: _buildPlaceholderSection(
-                  'Próximas Manutenções',
-                  Icons.calendar_month,
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                flex: 3,
-                child: _buildPlaceholderSection(
-                  'Fluxo de Caixa',
-                  Icons.bar_chart,
-                ),
+              _buildKpiCard(
+                'A Receber (Mês)',
+                'R\$ 32.800',
+                Icons.arrow_upward,
+                Colors.green,
               ),
             ],
           ),
@@ -183,16 +155,16 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Card de Indicador individual
   Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: 220,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -206,94 +178,17 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
-              Icon(icon, color: color, size: 28),
+              Icon(icon, color: color),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
         ],
-      ),
-    );
-  }
-
-  // Card genérico para ocupar espaço de relatórios futuros
-  Widget _buildPlaceholderSection(String title, IconData icon) {
-    return Container(
-      height: 350,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.grey.shade700),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Divider(),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'Gráficos e Listagens em breve...',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(IconData icon, String title, int index) {
-    final isSelected = _selectedIndex == index;
-
-    return Container(
-      color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        leading: Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.white70,
-          size: 26,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 15,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
       ),
     );
   }
