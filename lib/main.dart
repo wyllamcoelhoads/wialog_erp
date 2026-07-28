@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart'; // NOVO IMPORT
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_colors.dart';
+import 'core/di/service_locator.dart'; // NOVO IMPORT DA INJEÇÃO DE DEPENDÊNCIA
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 
@@ -9,7 +10,10 @@ void main() async {
   // NOVO: Garante que os bindings do Flutter estão prontos antes de chamar código nativo
   WidgetsFlutterBinding.ensureInitialized();
 
-  // NOVO: Inicializa o gerenciador de janelas
+  // NOVO: Inicializa todas as nossas dependências (Banco de dados, Repositórios, BLoCs)
+  await initDependencies();
+
+  // Inicializa o gerenciador de janelas
   await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = const WindowOptions(
