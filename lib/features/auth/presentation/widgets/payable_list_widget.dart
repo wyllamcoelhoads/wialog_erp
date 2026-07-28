@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:wialog_erp/features/auth/presentation/pages/dashboard_page.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../pages/document_form_page.dart';
 
+// O ERRO ESTAVA AQUI: Faltou a declaração da classe!
 class PayableListWidget extends StatefulWidget {
   const PayableListWidget({super.key});
 
@@ -79,10 +82,13 @@ class _PayableListWidgetState extends State<PayableListWidget> {
               // Botão de Nova Conta
               ElevatedButton.icon(
                 onPressed: () {
-                  // TODO: Abrir formulário de cadastro (Issue futura)
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Abrindo formulário de nova conta...'),
+                  // NOVO: Abre como uma Aba!
+                  DashboardPage.of(context).openTab(
+                    WorkspaceTab(
+                      id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}', // ID único
+                      title: 'Nova Conta',
+                      icon: Icons.add_circle_outline,
+                      content: const DocumentFormPage(),
                     ),
                   );
                 },
@@ -261,9 +267,14 @@ class _PayableListWidgetState extends State<PayableListWidget> {
   // MODAL DE VISUALIZAÇÃO DO DOCUMENTO
   // ==========================================
   void _showDocumentDetails(Map<String, dynamic> conta) {
+    // NOVO: Capturamos o estado do Dashboard ANTES de abrir o modal!
+    // Como o modal fica numa camada superior, ele não "enxergaria" o Dashboard diretamente.
+    final dashboardState = DashboardPage.of(context);
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
+        // Renomeamos para dialogContext para não confundir
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -289,7 +300,9 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(), // Usa o dialogContext
                     ),
                   ],
                 ),
@@ -381,6 +394,26 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    // NOVO BOTÃO: Redireciona para a tela completa passando o documento
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(
+                          dialogContext,
+                        ).pop(); // Fecha o modal primeiro
+                        // Usa o estado do Dashboard que salvamos lá em cima!
+                        dashboardState.openTab(
+                          WorkspaceTab(
+                            id: 'doc_${conta['id']}',
+                            title: 'Documento #${conta['id']}',
+                            icon: Icons.description,
+                            content: DocumentFormPage(document: conta),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.fullscreen, size: 18),
+                      label: const Text('Detalhes Completos'),
+                    ),
+                    const Spacer(),
                     OutlinedButton.icon(
                       onPressed: () {
                         // TODO: Imprimir
@@ -392,7 +425,9 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     ElevatedButton.icon(
                       onPressed: () {
                         // TODO: Lógica de Baixa/Pagamento
-                        Navigator.of(context).pop();
+                        Navigator.of(
+                          dialogContext,
+                        ).pop(); // Usa o dialogContext
                       },
                       icon: const Icon(
                         Icons.check_circle,

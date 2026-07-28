@@ -21,11 +21,17 @@ class WorkspaceTab {
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
+  // NOVO: Permite que qualquer tela do sistema acesse o gerenciador de abas!
+  static DashboardPageState of(BuildContext context) {
+    return context.findAncestorStateOfType<DashboardPageState>()!;
+  }
+
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<DashboardPage> createState() => DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+// REMOVEMOS O UNDERLINE '_' PARA TORNAR A CLASSE PÚBLICA
+class DashboardPageState extends State<DashboardPage> {
   // Lista de abas atualmente abertas
   final List<WorkspaceTab> _openTabs = [];
 
@@ -36,8 +42,9 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     // Inicia o sistema sempre com a Visão Geral aberta
-    _openTab(
+    openTab(
       WorkspaceTab(
+        // TIRE O UNDERLINE AQUI
         id: 'dashboard',
         title: 'Visão Geral',
         icon: Icons.dashboard,
@@ -46,8 +53,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Função central para abrir ou focar em uma aba
-  void _openTab(WorkspaceTab tab) {
+  // Função central para abrir ou focar em uma aba (TIRE O UNDERLINE AQUI)
+  void openTab(WorkspaceTab tab) {
     setState(() {
       // Verifica se a aba já está aberta (buscando pelo ID)
       final existingIndex = _openTabs.indexWhere((t) => t.id == tab.id);
@@ -63,8 +70,8 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  // Função para fechar uma aba
-  void _closeTab(int index) {
+  // Função para fechar uma aba (TIRE O UNDERLINE AQUI)
+  void closeTab(int index) {
     setState(() {
       // Regra: Não deixar fechar se for a última aba do sistema
       if (_openTabs.length <= 1) return;
@@ -78,6 +85,11 @@ class _DashboardPageState extends State<DashboardPage> {
         _activeTabIndex--;
       }
     });
+  }
+
+  // NOVO: Função para a aba fechar a si mesma
+  void closeCurrentTab() {
+    closeTab(_activeTabIndex);
   }
 
   @override
@@ -111,8 +123,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildSidebarItem(
                   icon: Icons.dashboard,
                   title: 'Visão Geral',
-                  onTap: () => _openTab(
+                  onTap: () => openTab(
                     WorkspaceTab(
+                      // TIRE O UNDERLINE AQUI
                       id: 'dashboard',
                       title: 'Visão Geral',
                       icon: Icons.dashboard,
@@ -123,8 +136,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildSidebarItem(
                   icon: Icons.directions_car,
                   title: 'Frotas',
-                  onTap: () => _openTab(
+                  onTap: () => openTab(
                     WorkspaceTab(
+                      // TIRE O UNDERLINE AQUI
                       id: 'frotas',
                       title: 'Frotas',
                       icon: Icons.directions_car,
@@ -139,8 +153,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 _buildSidebarItem(
                   icon: Icons.account_balance_wallet,
                   title: 'Financeiro',
-                  onTap: () => _openTab(
+                  onTap: () => openTab(
                     WorkspaceTab(
+                      // TIRE O UNDERLINE AQUI
                       id: 'finance',
                       title: 'Financeiro',
                       icon: Icons.account_balance_wallet,
@@ -247,7 +262,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                         constraints: const BoxConstraints(),
                                         color: AppColors.textMuted,
                                         onHover: (hovering) {},
-                                        onPressed: () => _closeTab(index),
+                                        onPressed: () => closeTab(
+                                          index,
+                                        ), // TIRE O UNDERLINE AQUI
                                       ),
                                   ],
                                 ),
@@ -288,7 +305,7 @@ class _DashboardPageState extends State<DashboardPage> {
       leading: Icon(icon, color: Colors.white70),
       title: Text(title, style: const TextStyle(color: Colors.white70)),
       onTap: onTap,
-      hoverColor: Colors.white.withOpacity(0.1),
+      hoverColor: Colors.white.withValues(alpha: 0.1),
     );
   }
 
