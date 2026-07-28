@@ -1,19 +1,20 @@
-name: Feature Request (Requisito Funcional) about: Sugira uma nova funcionalidade para o WiaLog ERP title: 'feat: [Nome da Funcionalidade]' labels: 'enhancement' assignees: ''
-📋 Descrição do Requisito
-🎯 Critérios de Aceite (Definition of Done)
+---
+name: Feature request
+about: Suggest an idea for this project
+title: ''
+labels: ''
+assignees: ''
 
-    [ ] O veículo deve ser salvo no banco de dados local.
+---
 
-    [ ] A tela deve exibir uma mensagem de sucesso verde.
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
-    [ ] O BLoC deve emitir o estado de Loaded após o salvamento.
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
 
-📐 Arquitetura (Clean Architecture)
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
 
-    Camada Data: (ex: criar VehicleModel e VehicleRepositoryImpl)
-
-    Camada Domain: (ex: criar entidade Vehicle e UseCase AddVehicle)
-
-    Camada Presentation: (ex: criar VehicleFormPage e VehicleBloc)
-
-🖼️ Telas / Mockups (Opcional)
+**Additional context**
+Add any other context or screenshots about the feature request here.

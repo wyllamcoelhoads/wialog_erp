@@ -1,25 +1,38 @@
-name: Feature Request (Requisito Funcional)
-about: Sugira uma nova funcionalidade para o WiaLog ERP
-title: 'feat: [Nome da Funcionalidade]'
-labels: 'enhancement'
+---
+name: Bug report
+about: Create a report to help us improve
+title: ''
+labels: ''
 assignees: ''
 
-📋 Descrição do Requisito
+---
 
-🎯 Critérios de Aceite (Definition of Done)
+**Describe the bug**
+A clear and concise description of what the bug is.
 
-[ ] O veículo deve ser salvo no banco de dados local.
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
-[ ] A tela deve exibir uma mensagem de sucesso verde.
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-[ ] O BLoC deve emitir o estado de Loaded após o salvamento.
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
-📐 Arquitetura (Clean Architecture)
+**Desktop (please complete the following information):**
+ - OS: [e.g. iOS]
+ - Browser [e.g. chrome, safari]
+ - Version [e.g. 22]
 
-Camada Data: (ex: criar VehicleModel e VehicleRepositoryImpl)
+**Smartphone (please complete the following information):**
+ - Device: [e.g. iPhone6]
+ - OS: [e.g. iOS8.1]
+ - Browser [e.g. stock browser, safari]
+ - Version [e.g. 22]
 
-Camada Domain: (ex: criar entidade Vehicle e UseCase AddVehicle)
-
-Camada Presentation: (ex: criar VehicleFormPage e VehicleBloc)
-
-🖼️ Telas / Mockups (Opcional)
+**Additional context**
+Add any other context about the problem here.
