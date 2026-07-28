@@ -81,6 +81,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  desktop_window:
+    dependency: "direct main"
+    description:
+      name: desktop_window
+      sha256: "099a3e54498d911e39504f419330732eb7e4e3a7072f5568fb7c0db690e10939"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.4"
   equatable:
     dependency: "direct main"
     description:
@@ -386,4 +394,4 @@ packages:
     version: "0.5.2"
 sdks:
   dart: ">=3.12.2 <4.0.0"
-  flutter: ">=3.18.0-18.0.pre.54"
+  flutter: ">=3.41.0"

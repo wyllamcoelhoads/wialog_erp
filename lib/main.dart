@@ -1,40 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// Usaremos o package base do flutter para Windows para definir o tamanho
+import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+import 'dart:io' show Platform;
+
 import 'core/theme/app_colors.dart';
-import 'core/di/service_locator.dart';
-import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'core/di/service_locator.dart';
 import 'features/finance/presentation/bloc/partner/partner_bloc.dart';
-import 'features/finance/presentation/bloc/partner/partner_event.dart';
 
 void main() async {
-  // 1. Garante que os bindings do Flutter estão prontos
+  // 1. Garante que os bindings do Flutter estão prontos para a GPU
   WidgetsFlutterBinding.ensureInitialized();
 
   // 2. Prepara o Banco de Dados e BLoCs
   await initDependencies();
 
-  // 3. Inicializa o pacote de janelas
-  await windowManager.ensureInitialized();
+  // 3. (Correção do BUG): Forçamos um tamanho inicial *antes* do app rodar.
+  // Isso obriga a engine a disparar um evento de resize e renderizar o primeiro frame!
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await DesktopWindow.setWindowSize(const Size(1280, 720));
+    await DesktopWindow.setMinWindowSize(const Size(800, 600));
+    // Não forçaremos o maximize aqui para evitar a tela branca do driver.
+  }
 
-  // 4. DISPARA O APLICATIVO (Isso evita a tela branca)
+  // 4. DISPARA O APLICATIVO
   runApp(const WiaLogApp());
-
-  // 5. Somente após o app abrir, configuramos e maximizamos a janela
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(1280, 720),
-    minimumSize: Size(800, 600),
-    center: true,
-    title: 'WiaLog ERP',
-  );
-
-  // CORREÇÃO: Usando o método atualizado do pacote window_manager
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-    await windowManager.maximize();
-  });
 }
 
 class WiaLogApp extends StatelessWidget {
@@ -45,23 +38,23 @@ class WiaLogApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
-        BlocProvider<PartnerBloc>(
-          create: (context) => sl<PartnerBloc>()..add(const LoadPartners()),
-        ),
+        // Adicionando o BLoC de Parceiros para todo o app ter acesso!
+        BlocProvider<PartnerBloc>(create: (context) => sl<PartnerBloc>()),
       ],
       child: MaterialApp(
         title: 'WiaLog ERP',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
-            brightness: Brightness.light,
-          ),
-          scaffoldBackgroundColor: AppColors.background,
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
           useMaterial3: true,
           fontFamily: 'Segoe UI',
         ),
-        home: const LoginPage(),
+        // TABELA DE ROTAS: Isso resolve o erro de navegação entre telas!
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const LoginPage(),
+          '/dashboard': (context) => const DashboardPage(),
+        },
       ),
     );
   }
