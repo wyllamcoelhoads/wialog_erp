@@ -3,36 +3,40 @@ import 'package:postgres/postgres.dart';
 class DatabaseConnection {
   Connection? _connection;
 
-  // Função central para obter a conexão
   Future<Connection> getConnection() async {
-    // Se já estiver aberto, reaproveita a mesma conexão
     if (_connection != null && _connection!.isOpen) {
       return _connection!;
     }
 
-    // Tenta abrir uma nova conexão.
-    // DICA: No futuro, estes valores virão de um arquivo de configuração local (.env ou JSON)
-    _connection = await Connection.open(
-      Endpoint(
-        host: 'localhost', // Servidor local (sua máquina)
-        database: 'wialog_db', // Nome do banco que você vai criar lá no pgAdmin
-        username: 'postgres', // Usuário padrão
-        password: '123', // Senha padrão de teste (altere para a sua!)
-        port: 5432,
-      ),
-      settings: const ConnectionSettings(
-        sslMode: SslMode.disable, // Desativado para desenvolvimento local
-      ),
-    );
+    try {
+      _connection = await Connection.open(
+        Endpoint(
+          // 👇 MUDANÇA CRUCIAL: Usar o IP direto evita erros de IPv6 no Windows!
+          host: '127.0.0.1',
+          database: 'wialog_db',
+          username: 'postgres',
 
-    return _connection!;
+          // Confirme se a sua senha do postgres é esta. Se não tiver senha, deixe ''
+          password: '123',
+
+          port: 5432,
+        ),
+        settings: const ConnectionSettings(
+          sslMode: SslMode.disable, // Obrigatório para banco local
+        ),
+      );
+
+      print('✅ SUCESSO: O Flutter conseguiu entrar no PostgreSQL!');
+      return _connection!;
+    } catch (e) {
+      print('❌ ERRO AO CONECTAR NO BANCO DE DADOS: $e');
+      rethrow;
+    }
   }
 
-  // Um atalho facilitador para não precisarmos chamar getConnection() o tempo todo
   Future<Result> query(String sql, [Map<String, dynamic>? parameters]) async {
     final conn = await getConnection();
 
-    // O pacote postgres novo (v3.0+) usa Sql.named para parâmetros nomeados
     if (parameters != null && parameters.isNotEmpty) {
       return await conn.execute(Sql.named(sql), parameters: parameters);
     } else {

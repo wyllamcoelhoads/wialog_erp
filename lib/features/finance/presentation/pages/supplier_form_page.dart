@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/partner_entity.dart';
+import '../bloc/partner/partner_bloc.dart';
+import '../bloc/partner/partner_event.dart';
 
 class SupplierFormPage extends StatefulWidget {
   const SupplierFormPage({super.key});
@@ -185,6 +189,23 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                       FilledButton.icon(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
+                            // NOVO: Instancia a Entidade do Fornecedor
+                            final newSupplier = PartnerEntity(
+                              id: 'FOR-${DateTime.now().millisecondsSinceEpoch}',
+                              name: _nameController.text,
+                              document: _cnpjController.text,
+                              type: PartnerType.supplier,
+                              contact: _phoneController.text.isNotEmpty
+                                  ? _phoneController.text
+                                  : _emailController.text,
+                              categoryOrCity: _selectedCategory,
+                            );
+
+                            // Dispara pro PostgreSQL
+                            context.read<PartnerBloc>().add(
+                              AddPartner(newSupplier),
+                            );
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Fornecedor salvo com sucesso!'),

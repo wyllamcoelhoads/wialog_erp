@@ -3,6 +3,10 @@ import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.da
 import '../../../../core/theme/app_colors.dart';
 import '../pages/client_form_page.dart';
 import '../pages/supplier_form_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/partner_entity.dart';
+import '../bloc/partner/partner_bloc.dart';
+import '../bloc/partner/partner_state.dart';
 
 class PartnersListWidget extends StatefulWidget {
   const PartnersListWidget({super.key});
@@ -15,66 +19,11 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
   // 0 = Clientes | 1 = Fornecedores
   int _selectedIndex = 0;
 
-  // Mock de Clientes
-  final List<Map<String, dynamic>> _mockClients = [
-    {
-      'id': 'CLI-001',
-      'name': 'Indústrias ABC Ltda',
-      'document': '12.345.678/0001-90',
-      'contact': '(11) 98888-7777',
-      'city': 'São Paulo/SP',
-      'status': 'Ativo',
-    },
-    {
-      'id': 'CLI-002',
-      'name': 'Supermercados Global',
-      'document': '98.765.432/0001-10',
-      'contact': '(21) 97777-6666',
-      'city': 'Rio de Janeiro/RJ',
-      'status': 'Ativo',
-    },
-    {
-      'id': 'CLI-003',
-      'name': 'João da Silva (Autônomo)',
-      'document': '123.456.789-00',
-      'contact': '(31) 96666-5555',
-      'city': 'Belo Horizonte/MG',
-      'status': 'Inativo',
-    },
-  ];
-
-  // Mock de Fornecedores
-  final List<Map<String, dynamic>> _mockSuppliers = [
-    {
-      'id': 'FOR-001',
-      'name': 'Posto Ipiranga Rota Sul',
-      'document': '45.678.901/0001-23',
-      'contact': '(41) 3333-4444',
-      'category': 'Combustível',
-      'status': 'Ativo',
-    },
-    {
-      'id': 'FOR-002',
-      'name': 'Oficina Mecânica Diesel Turbo',
-      'document': '56.789.012/0001-34',
-      'contact': '(51) 3444-5555',
-      'category': 'Manutenção',
-      'status': 'Ativo',
-    },
-    {
-      'id': 'FOR-003',
-      'name': 'Seguradora Proteção Total',
-      'document': '67.890.123/0001-45',
-      'contact': '(11) 4004-0000',
-      'category': 'Seguros',
-      'status': 'Ativo',
-    },
-  ];
+  // REMOVEMOS OS MOCKS! O BLoC fará todo o trabalho agora.
 
   @override
   Widget build(BuildContext context) {
     final isClientView = _selectedIndex == 0;
-    final currentList = isClientView ? _mockClients : _mockSuppliers;
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -215,79 +164,125 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    showCheckboxColumn: false,
-                    headingRowColor: WidgetStateProperty.all(
-                      AppColors.background,
-                    ),
-                    columns: [
-                      const DataColumn(
-                        label: Text(
-                          'Código',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                // NOVO: BlocBuilder! A tela se redesenha sozinha dependendo do Estado do Banco.
+                child: BlocBuilder<PartnerBloc, PartnerState>(
+                  builder: (context, state) {
+                    if (state is PartnerLoading || state is PartnerInitial) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state is PartnerError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(color: AppColors.error),
                         ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          isClientView ? 'Razão Social / Nome' : 'Fornecedor',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const DataColumn(
-                        label: Text(
-                          'CPF / CNPJ',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const DataColumn(
-                        label: Text(
-                          'Contato',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          isClientView ? 'Cidade' : 'Categoria',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const DataColumn(
-                        label: Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                    rows: currentList.map((item) {
-                      return DataRow(
-                        onSelectChanged: (selected) {
-                          if (selected == true) {
-                            // TODO: Abrir tela de edição/visualização do parceiro
-                          }
-                        },
-                        cells: [
-                          DataCell(Text(item['id'])),
-                          DataCell(
-                            Text(
-                              item['name'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                      );
+                    }
+
+                    if (state is PartnerLoaded) {
+                      // Filtra a lista do banco de acordo com a aba selecionada
+                      final currentList = state.partners.where((p) {
+                        return isClientView
+                            ? p.type == PartnerType.client
+                            : p.type == PartnerType.supplier;
+                      }).toList();
+
+                      if (currentList.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'Nenhum parceiro encontrado.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        );
+                      }
+
+                      return SingleChildScrollView(
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          headingRowColor: WidgetStateProperty.all(
+                            AppColors.background,
+                          ),
+                          columns: [
+                            const DataColumn(
+                              label: Text(
+                                'Código',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                          ),
-                          DataCell(Text(item['document'])),
-                          DataCell(Text(item['contact'])),
-                          DataCell(
-                            Text(
-                              isClientView ? item['city'] : item['category'],
+                            DataColumn(
+                              label: Text(
+                                isClientView
+                                    ? 'Razão Social / Nome'
+                                    : 'Fornecedor',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                          DataCell(_buildStatusChip(item['status'])),
-                        ],
+                            const DataColumn(
+                              label: Text(
+                                'CPF / CNPJ',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const DataColumn(
+                              label: Text(
+                                'Contato',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                isClientView ? 'Cidade' : 'Categoria',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const DataColumn(
+                              label: Text(
+                                'Status',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: currentList.map((item) {
+                            return DataRow(
+                              onSelectChanged: (selected) {
+                                if (selected == true) {
+                                  // TODO: Abrir tela de edição
+                                }
+                              },
+                              cells: [
+                                DataCell(
+                                  Text(item.id.substring(0, 8)),
+                                ), // Mostra só o começo do ID
+                                DataCell(
+                                  Text(
+                                    item.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text(item.document)),
+                                DataCell(Text(item.contact)),
+                                DataCell(Text(item.categoryOrCity)),
+                                DataCell(
+                                  _buildStatusChip(
+                                    item.isActive ? 'Ativo' : 'Inativo',
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       );
-                    }).toList(),
-                  ),
+                    }
+
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             ),

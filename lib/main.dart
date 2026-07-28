@@ -1,36 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart'; // NOVO IMPORT
+import 'package:window_manager/window_manager.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_colors.dart';
-import 'core/di/service_locator.dart'; // NOVO IMPORT DA INJEÇÃO DE DEPENDÊNCIA
+import 'core/di/service_locator.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'features/finance/presentation/bloc/partner/partner_bloc.dart';
+import 'features/finance/presentation/bloc/partner/partner_event.dart';
 
 void main() async {
-  // NOVO: Garante que os bindings do Flutter estão prontos antes de chamar código nativo
+  // 1. Garante que os bindings do Flutter estão prontos
   WidgetsFlutterBinding.ensureInitialized();
 
-  // NOVO: Inicializa todas as nossas dependências (Banco de dados, Repositórios, BLoCs)
+  // 2. Prepara o Banco de Dados e BLoCs
   await initDependencies();
 
-  // Inicializa o gerenciador de janelas
+  // 3. Inicializa o pacote de janelas
   await windowManager.ensureInitialized();
 
+  // 4. DISPARA O APLICATIVO (Isso evita a tela branca)
+  runApp(const WiaLogApp());
+
+  // 5. Somente após o app abrir, configuramos e maximizamos a janela
   WindowOptions windowOptions = const WindowOptions(
     size: Size(1280, 720),
-    minimumSize: Size(800, 600), // Tamanho mínimo para não quebrar o app
+    minimumSize: Size(800, 600),
     center: true,
     title: 'WiaLog ERP',
   );
 
-  // NOVO: Aplica as configurações e maximiza a tela antes de mostrar
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
+  // CORREÇÃO: Usando o método atualizado do pacote window_manager
+  await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
-    await windowManager.maximize(); // É AQUI QUE A MÁGICA ACONTECE!
+    await windowManager.maximize();
   });
-
-  runApp(const WiaLogApp());
 }
 
 class WiaLogApp extends StatelessWidget {
@@ -39,18 +43,21 @@ class WiaLogApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [BlocProvider<AuthBloc>(create: (context) => AuthBloc())],
+      providers: [
+        BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
+        BlocProvider<PartnerBloc>(
+          create: (context) => sl<PartnerBloc>()..add(const LoadPartners()),
+        ),
+      ],
       child: MaterialApp(
         title: 'WiaLog ERP',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          // Aplicando a nossa cor primária centralizada no tema geral do app
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.primary,
             brightness: Brightness.light,
           ),
-          scaffoldBackgroundColor:
-              AppColors.background, // Fundo padrão padronizado
+          scaffoldBackgroundColor: AppColors.background,
           useMaterial3: true,
           fontFamily: 'Segoe UI',
         ),
