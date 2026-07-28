@@ -13,7 +13,7 @@ class DatabaseConnection {
         Endpoint(
           // 👇 MUDANÇA CRUCIAL: Usar o IP direto evita erros de IPv6 no Windows!
           host: '127.0.0.1',
-          database: 'wialog_db',
+          database: 'postgres',
           username: 'postgres',
 
           // Confirme se a sua senha do postgres é esta. Se não tiver senha, deixe ''
