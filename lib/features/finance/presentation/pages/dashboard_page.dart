@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
-import 'finance_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
 
 // Classe auxiliar para gerenciar as abas abertas
 class WorkspaceTab {
@@ -326,8 +326,11 @@ class DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // SUBSTITUÍMOS O ROW (LINHA FIXA) PELO WRAP (QUEBRA AUTOMÁTICA)
+            Wrap(
+              spacing: 24, // Espaçamento horizontal entre os cartões
+              runSpacing:
+                  24, // Espaçamento vertical (caso a tela encolha e eles desçam)
               children: [
                 _buildKpiCard(
                   'Veículos Ativos',

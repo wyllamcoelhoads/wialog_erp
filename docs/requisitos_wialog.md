@@ -92,6 +92,8 @@ RNF05 (Tratamento de Erros): O sistema deve capturar falhas de conexão com o ba
 
 RNF06 - Segurança Local: A data de validade guardada localmente deve ser ofuscada ou criptografada (ex: pacote flutter_secure_storage) para dificultar a alteração maliciosa pelo cliente.
 
+RNF07 - Usabilidade e Plataforma: o sistema deve abrir maximizado (integração com o Windows) e os elementos visuais devem se adaptar fluidamente ao tamanho da tela (responsividade).
+
 ## 6. Próximos Passos (Roadmap MVP)
 
  Configuração de Banco de Dados Local (Criação de Tabelas).
