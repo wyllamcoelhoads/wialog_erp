@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/dashboard_page.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class DocumentFormPage extends StatefulWidget {
-  // Se receber um documento, entra em modo de Edição/Visualização.
-  // Se for null, entra em modo de Criação (Nova Conta).
   final Map<String, dynamic>? document;
 
-  const DocumentFormPage({super.key, this.document});
+  // NOVO: Essa flag define se a tela é de Receita ou de Despesa.
+  // Colocamos o padrão false para não quebrar a tela de Contas a Pagar que já existe!
+  final bool isReceivable;
+
+  const DocumentFormPage({super.key, this.document, this.isReceivable = false});
 
   @override
   State<DocumentFormPage> createState() => _DocumentFormPageState();
@@ -22,13 +24,19 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   late TextEditingController _supplierController;
   late TextEditingController _notesController;
 
-  String _selectedCategory = 'Despesa Operacional';
+  late String
+  _selectedCategory; // NOVO: late para iniciarmos de acordo com o tipo
 
   @override
   void initState() {
     super.initState();
-    //    // Preenche os campos se estiver em modo de edição
     final doc = widget.document;
+
+    // Inicia a categoria padrão baseada no tipo de documento
+    _selectedCategory = widget.isReceivable
+        ? 'Frete Lotação'
+        : 'Despesa Operacional';
+
     _descriptionController = TextEditingController(
       text: doc?['description'] ?? '',
     );
@@ -56,18 +64,22 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   Widget build(BuildContext context) {
     final isEditing = widget.document != null;
 
+    // Título dinâmico
+    final String pageTitle = isEditing
+        ? 'Documento #${widget.document!['id']}'
+        : (widget.isReceivable
+              ? 'Nova Receita (Faturamento)'
+              : 'Novo Lançamento (Despesa)');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
-        automaticallyImplyLeading:
-            false, // NOVO: Esconde a seta de voltar nativa pois estamos em uma aba
+        automaticallyImplyLeading: false,
         title: Text(
-          isEditing
-              ? 'Documento #${widget.document!['id']}'
-              : 'Novo Lançamento',
+          pageTitle,
           style: const TextStyle(
             color: AppColors.textTitle,
             fontWeight: FontWeight.bold,
@@ -118,43 +130,28 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: _buildTextField(
-                                  controller: _valueController,
-                                  label: 'Valor (R\$)',
-                                  icon: Icons.attach_money,
-                                  isRequired: true,
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _dueDateController,
-                                  label: 'Data de Vencimento',
-                                  icon: Icons.calendar_today,
-                                  isRequired: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          // NOVO: Usando a variável _selectedCategory num Dropdown!
-                          Row(
-                            children: [
-                              Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  initialValue: _selectedCategory,
+                                  value: _selectedCategory,
                                   decoration: const InputDecoration(
                                     labelText: 'Categoria',
                                     prefixIcon: Icon(Icons.category_outlined),
                                     border: OutlineInputBorder(),
                                   ),
+                                  // LISTA DINÂMICA DE CATEGORIAS
                                   items:
-                                      [
-                                            'Despesa Operacional',
-                                            'Impostos',
-                                            'Folha de Pagamento',
-                                            'Manutenção da Frota',
-                                          ]
+                                      (widget.isReceivable
+                                              ? [
+                                                  'Frete Lotação',
+                                                  'Frete Fracionado',
+                                                  'Contrato Mensal',
+                                                  'Outras Receitas',
+                                                ]
+                                              : [
+                                                  'Despesa Operacional',
+                                                  'Impostos',
+                                                  'Folha de Pagamento',
+                                                  'Manutenção da Frota',
+                                                ])
                                           .map(
                                             (cat) => DropdownMenuItem(
                                               value: cat,
@@ -172,11 +169,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 ),
                               ),
                               const SizedBox(width: 24),
-                              // NOVO: Usando o _supplierController que também estava sobrando
                               Expanded(
                                 child: _buildTextField(
                                   controller: _supplierController,
-                                  label: 'Fornecedor / Favorecido',
+                                  // LABEL DINÂMICO
+                                  label: widget.isReceivable
+                                      ? 'Cliente / Remetente'
+                                      : 'Fornecedor / Favorecido',
                                   icon: Icons.business_outlined,
                                   isRequired: true,
                                 ),
