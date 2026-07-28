@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
-import '../../../finance/presentation/pages/finance_page.dart';
+import 'finance_page.dart';
 
 // Classe auxiliar para gerenciar as abas abertas
 class WorkspaceTab {

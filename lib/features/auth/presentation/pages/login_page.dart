@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wialog_erp/features/auth/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginPage extends StatefulWidget {

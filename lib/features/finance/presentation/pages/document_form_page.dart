@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
-import 'package:wialog_erp/features/auth/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
 class DocumentFormPage extends StatefulWidget {
   final Map<String, dynamic>? document;

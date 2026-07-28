@@ -50,6 +50,8 @@ RF08: O sistema deve permitir a alteração de status financeiro (Pendente, Pago
 
 RF09: O sistema deve gerar um fluxo de caixa simples filtrável por período (mês/ano).
 
+RF10: O sistema deve permitir o cadastros de fornecedores e clientes, devendo existir duas telas distintas para o cadastro de cliente e de fornecedores (Para clientes deve ser possivel cadadastrar CPF/CNPJ,Razão social, Nome fantasia, um flag informando se o cliente é fisico ou juridico, contato e e-mail, dados de cobrança, endereço,obs  e etc ).
+
     3.4 Módulo de Segurança e Licenciamento (SaaS)
 
 RF01: O sistema deve validar a licença de uso conectando-se a um banco de dados em nuvem (Firebase) durante a inicialização ou login.
