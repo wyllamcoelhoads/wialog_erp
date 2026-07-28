@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wialog_erp/features/auth/presentation/widgets/payable_list_widget.dart';
 
 class FinancePage extends StatelessWidget {
   const FinancePage({super.key});
@@ -43,9 +44,7 @@ class FinancePage extends StatelessWidget {
           Expanded(
             child: TabBarView(
               children: [
-                _buildPlaceholder(
-                  'Módulo de Contas a Pagar\n(Aqui vai a lista de despesas e o botão de Nova Conta)',
-                ),
+                const PayableListWidget(),
                 _buildPlaceholder(
                   'Módulo de Contas a Receber\n(Aqui vai a lista de receitas)',
                 ),

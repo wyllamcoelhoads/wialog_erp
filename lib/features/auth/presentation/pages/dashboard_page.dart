@@ -3,6 +3,21 @@ import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
 import '../../../finance/presentation/pages/finance_page.dart';
 
+// Classe auxiliar para gerenciar as abas abertas
+class WorkspaceTab {
+  final String id;
+  final String title;
+  final IconData icon;
+  final Widget content;
+
+  WorkspaceTab({
+    required this.id,
+    required this.title,
+    required this.icon,
+    required this.content,
+  });
+}
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -11,32 +26,72 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  int _selectedIndex = 0;
+  // Lista de abas atualmente abertas
+  final List<WorkspaceTab> _openTabs = [];
 
-  Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildVisaoGeral();
-      case 1:
-        return const Center(child: Text('Módulo de Frotas (Em breve)'));
-      case 2:
-        return const FinancePage();
-      default:
-        return _buildVisaoGeral();
-    }
+  // Índice da aba que está visível na tela
+  int _activeTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicia o sistema sempre com a Visão Geral aberta
+    _openTab(
+      WorkspaceTab(
+        id: 'dashboard',
+        title: 'Visão Geral',
+        icon: Icons.dashboard,
+        content: _buildVisaoGeral(),
+      ),
+    );
+  }
+
+  // Função central para abrir ou focar em uma aba
+  void _openTab(WorkspaceTab tab) {
+    setState(() {
+      // Verifica se a aba já está aberta (buscando pelo ID)
+      final existingIndex = _openTabs.indexWhere((t) => t.id == tab.id);
+
+      if (existingIndex != -1) {
+        // Se já está aberta, apenas foca nela
+        _activeTabIndex = existingIndex;
+      } else {
+        // Se não está, adiciona na lista e foca na última aba
+        _openTabs.add(tab);
+        _activeTabIndex = _openTabs.length - 1;
+      }
+    });
+  }
+
+  // Função para fechar uma aba
+  void _closeTab(int index) {
+    setState(() {
+      // Regra: Não deixar fechar se for a última aba do sistema
+      if (_openTabs.length <= 1) return;
+
+      _openTabs.removeAt(index);
+
+      // Ajusta o índice ativo para não quebrar a tela
+      if (_activeTabIndex >= _openTabs.length) {
+        _activeTabIndex = _openTabs.length - 1;
+      } else if (_activeTabIndex > index) {
+        _activeTabIndex--;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // O Scaffold já pega a cor de fundo do main.dart automaticamente, mas podemos garantir:
       backgroundColor: AppColors.background,
       body: Row(
         children: [
-          // Menu Lateral
+          // ==============================
+          // MENU LATERAL FIXO
+          // ==============================
           Container(
             width: 250,
-            color: AppColors.sidebar, // Usando a cor padronizada!
+            color: AppColors.sidebar,
             child: Column(
               children: [
                 const SizedBox(height: 40),
@@ -52,9 +107,47 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: 40),
 
-                _buildMenuItem(Icons.dashboard, 'Visão Geral', 0),
-                _buildMenuItem(Icons.directions_car, 'Frotas', 1),
-                _buildMenuItem(Icons.account_balance_wallet, 'Financeiro', 2),
+                // Botões do menu que agora ABRIRÃO ABAS
+                _buildSidebarItem(
+                  icon: Icons.dashboard,
+                  title: 'Visão Geral',
+                  onTap: () => _openTab(
+                    WorkspaceTab(
+                      id: 'dashboard',
+                      title: 'Visão Geral',
+                      icon: Icons.dashboard,
+                      content: _buildVisaoGeral(),
+                    ),
+                  ),
+                ),
+                _buildSidebarItem(
+                  icon: Icons.directions_car,
+                  title: 'Frotas',
+                  onTap: () => _openTab(
+                    WorkspaceTab(
+                      id: 'frotas',
+                      title: 'Frotas',
+                      icon: Icons.directions_car,
+                      content: const Center(
+                        child: Text(
+                          'Módulo de Frotas e Manutenções (Em breve)',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                _buildSidebarItem(
+                  icon: Icons.account_balance_wallet,
+                  title: 'Financeiro',
+                  onTap: () => _openTab(
+                    WorkspaceTab(
+                      id: 'finance',
+                      title: 'Financeiro',
+                      icon: Icons.account_balance_wallet,
+                      content: const FinancePage(),
+                    ),
+                  ),
+                ),
 
                 const Spacer(),
                 ListTile(
@@ -74,81 +167,179 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
 
-          Expanded(child: _buildBody()),
-        ],
-      ),
-    );
-  }
+          // ==============================
+          // ÁREA DE TRABALHO (WORKSPACE)
+          // ==============================
+          Expanded(
+            child: Column(
+              children: [
+                // Barra Superior de Abas (Estilo Navegador)
+                Container(
+                  height: 50,
+                  color: Colors.white,
+                  width: double.infinity,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _openTabs.length,
+                          itemBuilder: (context, index) {
+                            final tab = _openTabs[index];
+                            final isActive = _activeTabIndex == index;
 
-  Widget _buildMenuItem(IconData icon, String title, int index) {
-    final isSelected = _selectedIndex == index;
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _activeTabIndex = index;
+                                });
+                              },
+                              child: Container(
+                                width: 180,
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? AppColors.background
+                                      : Colors.white,
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: isActive
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                      width: 3,
+                                    ),
+                                    right: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      tab.icon,
+                                      size: 16,
+                                      color: isActive
+                                          ? AppColors.primary
+                                          : AppColors.textMuted,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        tab.title,
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? AppColors.textTitle
+                                              : AppColors.textMuted,
+                                          fontWeight: isActive
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    // Só mostra o "X" se tiver mais de uma aba aberta
+                                    if (_openTabs.length > 1)
+                                      IconButton(
+                                        icon: const Icon(Icons.close, size: 16),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        color: AppColors.textMuted,
+                                        onHover: (hovering) {},
+                                        onPressed: () => _closeTab(index),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-    return Container(
-      color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
-      child: ListTile(
-        leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildVisaoGeral() {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Visão Geral',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textTitle, // Usando cor de texto padrão
+                // O IndexedStack mantém todas as abas vivas na memória,
+                // mas só exibe a que estiver com o índice ativo!
+                Expanded(
+                  child: IndexedStack(
+                    index: _activeTabIndex,
+                    children: _openTabs.map((tab) => tab.content).toList(),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Usando as cores semânticas padronizadas!
-              _buildKpiCard(
-                'Veículos Ativos',
-                '12',
-                Icons.local_shipping,
-                AppColors.info,
-              ),
-              _buildKpiCard(
-                'Em Manutenção',
-                '2',
-                Icons.build,
-                AppColors.warning,
-              ),
-              _buildKpiCard(
-                'A Pagar (Mês)',
-                'R\$ 14.500',
-                Icons.arrow_downward,
-                AppColors.error,
-              ),
-              _buildKpiCard(
-                'A Receber (Mês)',
-                'R\$ 32.800',
-                Icons.arrow_upward,
-                AppColors.success,
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+
+  // Componente extraído para facilitar o menu lateral
+  Widget _buildSidebarItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    // Para destacar no menu lateral, poderíamos verificar se o ID da aba ativa corresponde ao item,
+    // mas num sistema de abas, é melhor o menu funcionar apenas como "atalho de abertura".
+    return ListTile(
+      leading: Icon(icon, color: Colors.white70),
+      title: Text(title, style: const TextStyle(color: Colors.white70)),
+      onTap: onTap,
+      hoverColor: Colors.white.withOpacity(0.1),
+    );
+  }
+
+  // A Visão Geral (Dashboard) intacta
+  Widget _buildVisaoGeral() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Visão Geral',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textTitle,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildKpiCard(
+                  'Veículos Ativos',
+                  '12',
+                  Icons.local_shipping,
+                  AppColors.info,
+                ),
+                _buildKpiCard(
+                  'Em Manutenção',
+                  '2',
+                  Icons.build,
+                  AppColors.warning,
+                ),
+                _buildKpiCard(
+                  'A Pagar (Mês)',
+                  'R\$ 14.500',
+                  Icons.arrow_downward,
+                  AppColors.error,
+                ),
+                _buildKpiCard(
+                  'A Receber (Mês)',
+                  'R\$ 32.800',
+                  Icons.arrow_upward,
+                  AppColors.success,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -162,7 +353,7 @@ class _DashboardPageState extends State<DashboardPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -176,7 +367,10 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 title,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 14,
+                ),
               ),
               Icon(icon, color: color),
             ],
