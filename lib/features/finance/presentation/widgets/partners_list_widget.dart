@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/partner_entity.dart';
 import '../bloc/partner/partner_bloc.dart';
 import '../bloc/partner/partner_state.dart';
+import '../bloc/partner/partner_event.dart';
 
 class PartnersListWidget extends StatefulWidget {
   const PartnersListWidget({super.key});
@@ -16,10 +17,23 @@ class PartnersListWidget extends StatefulWidget {
 }
 
 class _PartnersListWidgetState extends State<PartnersListWidget> {
-  // 0 = Clientes | 1 = Fornecedores
   int _selectedIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
 
-  // REMOVEMOS OS MOCKS! O BLoC fará todo o trabalho agora.
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _performSearch() {
+    final type = _selectedIndex == 0
+        ? PartnerType.client
+        : PartnerType.supplier;
+    context.read<PartnerBloc>().add(
+      LoadPartners(type: type, query: _searchController.text),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,19 +44,14 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ==========================================
-          // BARRA SUPERIOR (Seletor e Botão Novo)
-          // ==========================================
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Seletor Clientes / Fornecedores
+              // Seletor Clientes / Fornecedores Estilizado
               SegmentedButton<int>(
                 segments: const [
                   ButtonSegment(
                     value: 0,
-                    icon: Icon(Icons.group),
-                    // Removemos a cor fixa daqui
                     label: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text('Meus Clientes'),
@@ -50,8 +59,6 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                   ),
                   ButtonSegment(
                     value: 1,
-                    icon: Icon(Icons.local_shipping),
-                    // Removemos a cor fixa daqui
                     label: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text('Meus Fornecedores'),
@@ -62,41 +69,34 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                 onSelectionChanged: (Set<int> newSelection) {
                   setState(() {
                     _selectedIndex = newSelection.first;
+                    _searchController.clear();
                   });
                 },
                 style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                    states,
-                  ) {
-                    if (states.contains(WidgetState.selected)) {
-                      return AppColors.primary;
-                    }
-                    return Colors.white;
-                  }),
-                  // ADICIONAMOS O CONTROLE DE COR DO TEXTO/ÍCONE AQUI!
-                  foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                    states,
-                  ) {
-                    if (states.contains(WidgetState.selected)) {
-                      return Colors.white; // Fica branco quando selecionado
-                    }
-                    return AppColors
-                        .textTitle; // Fica escuro quando não selecionado
-                  }),
+                  backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (states) => states.contains(WidgetState.selected)
+                        ? AppColors.primary
+                        : Colors.white,
+                  ),
+                  foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                    (states) => states.contains(WidgetState.selected)
+                        ? Colors.white
+                        : AppColors.textTitle,
+                  ),
                 ),
               ),
 
               // Campo de Pesquisa
               SizedBox(
                 width: 250,
-                height: 40,
                 child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (_) => _performSearch(),
                   decoration: InputDecoration(
                     hintText: 'Pesquisar...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 16,
+                    prefixIcon: IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: _performSearch,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -105,16 +105,14 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                 ),
               ),
 
-              // Botão Dinâmico (Novo Cliente ou Novo Fornecedor)
+              // Botão Adicionar Estilizado
               ElevatedButton.icon(
                 onPressed: () {
                   final dashboardState = DashboardPage.of(context);
-                  final stamp = DateTime.now().millisecondsSinceEpoch;
-
                   if (isClientView) {
                     dashboardState.openTab(
                       WorkspaceTab(
-                        id: 'new_client_$stamp',
+                        id: 'new_client',
                         title: 'Novo Cliente',
                         icon: Icons.person_add,
                         content: const ClientFormPage(),
@@ -123,7 +121,7 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                   } else {
                     dashboardState.openTab(
                       WorkspaceTab(
-                        id: 'new_supplier_$stamp',
+                        id: 'new_supplier',
                         title: 'Novo Fornecedor',
                         icon: Icons.domain_add,
                         content: const SupplierFormPage(),
@@ -131,7 +129,7 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                     );
                   }
                 },
-                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                icon: const Icon(Icons.add, color: Colors.white),
                 label: Text(
                   isClientView ? 'Novo Cliente' : 'Novo Fornecedor',
                   style: const TextStyle(color: Colors.white),
@@ -139,11 +137,8 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    horizontal: 20,
+                    vertical: 20,
                   ),
                 ),
               ),
@@ -152,9 +147,6 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
 
           const SizedBox(height: 24),
 
-          // ==========================================
-          // TABELA DE DADOS
-          // ==========================================
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -162,153 +154,83 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                // NOVO: BlocBuilder! A tela se redesenha sozinha dependendo do Estado do Banco.
-                child: BlocBuilder<PartnerBloc, PartnerState>(
-                  builder: (context, state) {
-                    if (state is PartnerLoading || state is PartnerInitial) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+              child: BlocBuilder<PartnerBloc, PartnerState>(
+                builder: (context, state) {
+                  if (state is PartnerInitial) {
+                    return const Center(
+                      child: Text(
+                        "Digite o nome e pesquise para começar.",
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    );
+                  }
+                  if (state is PartnerLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state is PartnerError) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    );
+                  }
 
-                    if (state is PartnerError) {
-                      return Center(
+                  if (state is PartnerLoaded) {
+                    if (state.partners.isEmpty) {
+                      return const Center(
                         child: Text(
-                          state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          "Nenhum resultado encontrado.",
+                          style: TextStyle(color: AppColors.textMuted),
                         ),
                       );
                     }
 
-                    if (state is PartnerLoaded) {
-                      // Filtra a lista do banco de acordo com a aba selecionada
-                      final currentList = state.partners.where((p) {
-                        return isClientView
-                            ? p.type == PartnerType.client
-                            : p.type == PartnerType.supplier;
-                      }).toList();
-
-                      if (currentList.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'Nenhum parceiro encontrado.',
-                            style: TextStyle(color: AppColors.textMuted),
-                          ),
-                        );
-                      }
-
-                      return SingleChildScrollView(
-                        child: DataTable(
-                          showCheckboxColumn: false,
-                          headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
-                          ),
-                          columns: [
-                            const DataColumn(
-                              label: Text(
-                                'Código',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                isClientView
-                                    ? 'Razão Social / Nome'
-                                    : 'Fornecedor',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const DataColumn(
-                              label: Text(
-                                'CPF / CNPJ',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const DataColumn(
-                              label: Text(
-                                'Contato',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            DataColumn(
-                              label: Text(
-                                isClientView ? 'Cidade' : 'Categoria',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const DataColumn(
-                              label: Text(
-                                'Status',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                          rows: currentList.map((item) {
-                            return DataRow(
-                              onSelectChanged: (selected) {
-                                if (selected == true) {
-                                  // TODO: Abrir tela de edição
-                                }
-                              },
-                              cells: [
-                                DataCell(
-                                  Text(item.id.substring(0, 8)),
-                                ), // Mostra só o começo do ID
-                                DataCell(
-                                  Text(
-                                    item.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(Text(item.document)),
-                                DataCell(Text(item.contact)),
-                                DataCell(Text(item.categoryOrCity)),
-                                DataCell(
-                                  _buildStatusChip(
-                                    item.isActive ? 'Ativo' : 'Inativo',
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
+                    return SingleChildScrollView(
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(
+                          AppColors.background,
                         ),
-                      );
-                    }
-
-                    return const SizedBox.shrink();
-                  },
-                ),
+                        columns: const [
+                          DataColumn(
+                            label: Text(
+                              'Código',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          DataColumn(
+                            label: Text(
+                              'Nome',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          DataColumn(
+                            label: Text(
+                              'CPF/CNPJ',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                        rows: state.partners
+                            .map(
+                              (item) => DataRow(
+                                cells: [
+                                  DataCell(Text(item.id.toString())),
+                                  DataCell(Text(item.name)),
+                                  DataCell(Text(item.document)),
+                                ],
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(String status) {
-    final bool isActive = status == 'Ativo';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isActive
-            ? AppColors.success.withValues(alpha: 0.1)
-            : AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: isActive ? AppColors.success : AppColors.error,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
       ),
     );
   }

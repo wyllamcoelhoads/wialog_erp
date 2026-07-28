@@ -1,9 +1,9 @@
 import '../../../../core/database/database_connection.dart';
 import '../models/partner_model.dart';
-import '../../domain/entities/partner_entity.dart'; // Para acessar o enum PartnerType
+import '../../domain/entities/partner_entity.dart';
 
 abstract class PartnerDataSource {
-  Future<List<PartnerModel>> getPartners({PartnerType? type});
+  Future<List<PartnerModel>> getPartners({PartnerType? type, String? query});
   Future<PartnerModel> createPartner(PartnerModel partner);
   Future<PartnerModel> updatePartner(PartnerModel partner);
 }
@@ -14,18 +14,35 @@ class PartnerPostgresDataSource implements PartnerDataSource {
   PartnerPostgresDataSource(this.dbConnection);
 
   @override
-  Future<List<PartnerModel>> getPartners({PartnerType? type}) async {
-    String sql = 'SELECT * FROM partners ORDER BY created_at DESC';
-    Map<String, dynamic>? params;
+  Future<List<PartnerModel>> getPartners({
+    PartnerType? type,
+    String? query,
+  }) async {
+    List<String> whereClauses = [];
+    Map<String, dynamic> params = {};
 
+    // Filtro por Tipo (Cliente ou Fornecedor)
     if (type != null) {
-      sql = 'SELECT * FROM partners WHERE type = @type ORDER BY name ASC';
-      params = {'type': type == PartnerType.supplier ? 'supplier' : 'client'};
+      whereClauses.add('type = @type');
+      params['type'] = type == PartnerType.supplier ? 'supplier' : 'client';
     }
+
+    // Filtro por Query (Busca por nome/razão social)
+    if (query != null && query.isNotEmpty) {
+      whereClauses.add(
+        'name ILIKE @query or id ILIKE @query or document ILIKE @query',
+      );
+      params['query'] = '%$query%'; // ILIKE busca em qualquer parte da string
+    }
+
+    String sql = 'SELECT * FROM partners';
+    if (whereClauses.isNotEmpty) {
+      sql += ' WHERE ${whereClauses.join(' AND ')}';
+    }
+    sql += ' ORDER BY created_at DESC';
 
     final result = await dbConnection.query(sql, params);
 
-    // O pacote postgres novo permite converter a linha do banco direto para Map
     return result
         .map((row) => PartnerModel.fromMap(row.toColumnMap()))
         .toList();
@@ -41,7 +58,6 @@ class PartnerPostgresDataSource implements PartnerDataSource {
 
     final result = await dbConnection.query(sql, partner.toMap());
 
-    // Pega a linha recém-inserida que o banco retornou e devolve pro sistema
     return PartnerModel.fromMap(result.first.toColumnMap());
   }
 

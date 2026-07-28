@@ -8,17 +8,18 @@ abstract class PartnerEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Evento: Pedir para a tela carregar a lista do banco
+// Evento: Pedir para a tela carregar a lista do banco com filtros opcionais
 class LoadPartners extends PartnerEvent {
-  final PartnerType? type; // Pode carregar só clientes, só fornecedores ou tudo
+  final PartnerType? type;
+  final String? query; // NOVO: Campo de busca
 
-  const LoadPartners({this.type});
+  const LoadPartners({this.type, this.query});
 
   @override
-  List<Object?> get props => [type];
+  List<Object?> get props => [type, query];
 }
 
-// Evento: Pedir para salvar um novo parceiro no banco
+// Evento: Pedir para salvar um novo parceiro
 class AddPartner extends PartnerEvent {
   final PartnerEntity partner;
 

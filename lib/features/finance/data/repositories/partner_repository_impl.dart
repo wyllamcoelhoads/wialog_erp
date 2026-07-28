@@ -10,10 +10,12 @@ class PartnerRepositoryImpl implements PartnerRepository {
   PartnerRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<PartnerEntity>> getPartners({PartnerType? type}) async {
-    // Chama o DataSource, que vai lá no SQL, busca os dados e devolve como Model
-    // (Lembrando que Model é filho de Entity, então a tipagem bate perfeitamente)
-    return await dataSource.getPartners(type: type);
+  Future<List<PartnerEntity>> getPartners({
+    PartnerType? type,
+    String? query,
+  }) async {
+    // Chama o DataSource passando o tipo e agora também o termo de busca (query)
+    return await dataSource.getPartners(type: type, query: query);
   }
 
   @override

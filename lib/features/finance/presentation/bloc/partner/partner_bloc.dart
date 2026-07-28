@@ -1,13 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../finance/domain/repositories/partner_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/partner_repository.dart';
 import 'partner_event.dart';
 import 'partner_state.dart';
 
-// O BLoC escuta Eventos, processa as regras usando o Repository e emite Estados.
 class PartnerBloc extends Bloc<PartnerEvent, PartnerState> {
   final PartnerRepository repository;
 
-  // Ao criar o BLoC, ele começa no estado Inicial e define quais funções rodam para cada evento
   PartnerBloc(this.repository) : super(PartnerInitial()) {
     on<LoadPartners>(_onLoadPartners);
     on<AddPartner>(_onAddPartner);
@@ -17,14 +15,17 @@ class PartnerBloc extends Bloc<PartnerEvent, PartnerState> {
     LoadPartners event,
     Emitter<PartnerState> emit,
   ) async {
-    emit(PartnerLoading()); // Avisa a tela para girar a bolinha de loading
+    emit(PartnerLoading());
 
     try {
-      // Pede os dados ao Repositório (que vai no Postgres buscar)
-      final partners = await repository.getPartners(type: event.type);
-      emit(PartnerLoaded(partners)); // Entrega os dados pra tela!
+      // Passando o filtro (type e query) para o repositório
+      final partners = await repository.getPartners(
+        type: event.type,
+        query: event.query,
+      );
+      emit(PartnerLoaded(partners));
     } catch (e) {
-      emit(PartnerError('Erro ao carregar parceiros: $e'));
+      emit(PartnerError('Erro ao buscar parceiros: $e'));
     }
   }
 
@@ -36,8 +37,7 @@ class PartnerBloc extends Bloc<PartnerEvent, PartnerState> {
 
     try {
       await repository.createPartner(event.partner);
-      // Após inserir com sucesso, disparamos o evento de "Recarregar" a lista
-      // Isso garante que a tabela estará sempre atualizada com os dados reais do banco!
+      // Recarrega sem filtro após salvar para mostrar o novo na lista
       add(const LoadPartners());
     } catch (e) {
       emit(PartnerError('Erro ao salvar parceiro: $e'));
