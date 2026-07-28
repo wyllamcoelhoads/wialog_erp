@@ -1,45 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:wialog_erp/features/auth/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../pages/document_form_page.dart';
 
-// O ERRO ESTAVA AQUI: Faltou a declaração da classe!
-class PayableListWidget extends StatefulWidget {
-  const PayableListWidget({super.key});
+class ReceivableListWidget extends StatefulWidget {
+  const ReceivableListWidget({super.key});
 
   @override
-  State<PayableListWidget> createState() => _PayableListWidgetState();
+  State<ReceivableListWidget> createState() => _ReceivableListWidgetState();
 }
 
-class _PayableListWidgetState extends State<PayableListWidget> {
-  // No futuro, isso virá do BLoC / Banco de Dados (PostgreSQL)
-  final List<Map<String, dynamic>> _mockPayables = [
+class _ReceivableListWidgetState extends State<ReceivableListWidget> {
+  // Mock de dados focados em faturamento de fretes
+  final List<Map<String, dynamic>> _mockReceivables = [
     {
-      'id': '001',
-      'description': 'Combustível - Posto Ipiranga',
-      'dueDate': '15/08/2026',
-      'value': 2500.00,
-      'status': 'Pago',
+      'id': '101',
+      'description': 'Frete - Rota SP x RJ (Carga Seca)',
+      'client': 'Indústrias ABC Ltda',
+      'dueDate': '05/08/2026',
+      'value': 4500.00,
+      'status': 'Recebido',
     },
     {
-      'id': '002',
-      'description': 'Manutenção - Oficina do Zé (Placa ABC-1234)',
-      'dueDate': '20/08/2026',
-      'value': 1200.50,
+      'id': '102',
+      'description': 'Frete Fracionado - Sul',
+      'client': 'Comércio Varejista XYZ',
+      'dueDate': '18/08/2026',
+      'value': 1850.75,
       'status': 'Pendente',
     },
     {
-      'id': '003',
-      'description': 'Internet e Telefone',
-      'dueDate': '10/08/2026',
-      'value': 299.90,
+      'id': '103',
+      'description': 'Contrato Logístico Mensal',
+      'client': 'Supermercados Global',
+      'dueDate': '01/08/2026',
+      'value': 12000.00,
       'status': 'Atrasado',
     },
     {
-      'id': '004',
-      'description': 'Seguro da Frota',
-      'dueDate': '25/08/2026',
-      'value': 4500.00,
+      'id': '104',
+      'description': 'Frete - Rota GO x PR (Refrigerada)',
+      'client': 'Agropecuária Norte',
+      'dueDate': '28/08/2026',
+      'value': 8900.00,
       'status': 'Pendente',
     },
   ];
@@ -51,17 +54,16 @@ class _PayableListWidgetState extends State<PayableListWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Barra de Ferramentas (Search e Botão Adicionar)
+          // Barra de Ferramentas
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Campo de Pesquisa
               SizedBox(
                 width: 300,
                 height: 40,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Pesquisar conta...',
+                    hintText: 'Pesquisar receita ou cliente...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 0,
@@ -79,26 +81,26 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 ),
               ),
 
-              // Botão de Nova Conta
               ElevatedButton.icon(
                 onPressed: () {
-                  // NOVO: Abre como uma Aba!
                   DashboardPage.of(context).openTab(
                     WorkspaceTab(
-                      id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}', // ID único
-                      title: 'Nova Conta',
+                      id: 'new_rec_${DateTime.now().millisecondsSinceEpoch}',
+                      title: 'Nova Receita',
                       icon: Icons.add_circle_outline,
-                      content: const DocumentFormPage(),
+                      // NOVO: Passamos isReceivable como true!
+                      content: const DocumentFormPage(isReceivable: true),
                     ),
                   );
                 },
                 icon: const Icon(Icons.add, color: Colors.white, size: 20),
                 label: const Text(
-                  'Nova Conta',
+                  'Nova Receita',
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors
+                      .success, // Verde para indicar entrada de dinheiro
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 16,
@@ -112,7 +114,6 @@ class _PayableListWidgetState extends State<PayableListWidget> {
           ),
           const SizedBox(height: 24),
 
-          // Tabela de Dados com fundo branco e sombra
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -124,8 +125,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 borderRadius: BorderRadius.circular(8),
                 child: SingleChildScrollView(
                   child: DataTable(
-                    showCheckboxColumn:
-                        false, // Oculta o checkbox nativo para usarmos o clique na linha inteira
+                    showCheckboxColumn: false,
                     headingRowColor: WidgetStateProperty.all(
                       AppColors.background,
                     ),
@@ -139,6 +139,12 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                       DataColumn(
                         label: Text(
                           'Descrição',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Cliente',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -160,59 +166,28 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      DataColumn(
-                        label: Text(
-                          'Ações',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
                     ],
-                    rows: _mockPayables.map((conta) {
+                    rows: _mockReceivables.map((receita) {
                       return DataRow(
-                        // Torna a linha interativa (clicável)
                         onSelectChanged: (bool? selected) {
                           if (selected == true) {
-                            _showDocumentDetails(conta);
+                            _showDocumentDetails(receita);
                           }
                         },
                         cells: [
-                          DataCell(Text(conta['id'])),
+                          DataCell(Text(receita['id'])),
                           DataCell(
                             Text(
-                              conta['description'],
+                              receita['description'],
                               style: const TextStyle(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                          DataCell(Text(conta['dueDate'])),
-                          DataCell(Text(conta['value'].toStringAsFixed(2))),
-                          DataCell(_buildStatusChip(conta['status'])),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 18,
-                                    color: AppColors.info,
-                                  ),
-                                  tooltip: 'Editar',
-                                  onPressed: () {},
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 18,
-                                    color: AppColors.success,
-                                  ),
-                                  tooltip: 'Marcar como Pago',
-                                  onPressed: () {},
-                                ),
-                              ],
-                            ),
-                          ),
+                          DataCell(Text(receita['client'])),
+                          DataCell(Text(receita['dueDate'])),
+                          DataCell(Text(receita['value'].toStringAsFixed(2))),
+                          DataCell(_buildStatusChip(receita['status'])),
                         ],
                       );
                     }).toList(),
@@ -231,7 +206,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
     Color textColor;
 
     switch (status) {
-      case 'Pago':
+      case 'Recebido':
         bgColor = AppColors.success.withValues(alpha: 0.1);
         textColor = AppColors.success;
         break;
@@ -241,8 +216,8 @@ class _PayableListWidgetState extends State<PayableListWidget> {
         break;
       case 'Pendente':
       default:
-        bgColor = AppColors.warning.withValues(alpha: 0.1);
-        textColor = AppColors.warning;
+        bgColor = AppColors.info.withValues(alpha: 0.1);
+        textColor = AppColors.info;
         break;
     }
 
@@ -263,18 +238,12 @@ class _PayableListWidgetState extends State<PayableListWidget> {
     );
   }
 
-  // ==========================================
-  // MODAL DE VISUALIZAÇÃO DO DOCUMENTO
-  // ==========================================
   void _showDocumentDetails(Map<String, dynamic> conta) {
-    // NOVO: Capturamos o estado do Dashboard ANTES de abrir o modal!
-    // Como o modal fica numa camada superior, ele não "enxergaria" o Dashboard diretamente.
     final dashboardState = DashboardPage.of(context);
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        // Renomeamos para dialogContext para não confundir
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -286,12 +255,11 @@ class _PayableListWidgetState extends State<PayableListWidget> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cabeçalho do Documento
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Documento #${conta['id']}',
+                      'Faturamento #${conta['id']}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -300,17 +268,14 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(
-                        dialogContext,
-                      ).pop(), // Usa o dialogContext
+                      onPressed: () => Navigator.of(dialogContext).pop(),
                     ),
                   ],
                 ),
                 const Divider(height: 32),
 
-                // Corpo do Documento (Detalhes)
                 _buildDocumentField(
-                  'Descrição do Lançamento',
+                  'Descrição do Faturamento',
                   conta['description'],
                 ),
                 const SizedBox(height: 16),
@@ -325,7 +290,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     ),
                     Expanded(
                       child: _buildDocumentField(
-                        'Valor Original',
+                        'Valor a Receber',
                         'R\$ ${conta['value'].toStringAsFixed(2)}',
                       ),
                     ),
@@ -352,61 +317,27 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                       ),
                     ),
                     Expanded(
-                      child: _buildDocumentField(
-                        'Categoria',
-                        'Despesa Operacional',
-                      ),
-                    ), // Campo Mockado extra
+                      child: _buildDocumentField('Cliente', conta['client']),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 32),
-
-                // Área de Anexos Fictícia
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.picture_as_pdf, color: AppColors.error),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          'boleto_vencimento.pdf',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      Icon(Icons.download, color: AppColors.textMuted),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Botões de Ação
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    // NOVO BOTÃO: Redireciona para a tela completa passando o documento
                     TextButton.icon(
                       onPressed: () {
-                        Navigator.of(
-                          dialogContext,
-                        ).pop(); // Fecha o modal primeiro
-                        // Usa o estado do Dashboard que salvamos lá em cima!
+                        Navigator.of(dialogContext).pop();
                         dashboardState.openTab(
                           WorkspaceTab(
-                            id: 'doc_${conta['id']}',
-                            title: 'Documento #${conta['id']}',
-                            icon: Icons.description,
-                            content: DocumentFormPage(document: conta),
+                            id: 'rec_${conta['id']}',
+                            title: 'Receita #${conta['id']}',
+                            icon: Icons.request_quote,
+                            content: DocumentFormPage(
+                              document: conta,
+                              isReceivable: true,
+                            ),
                           ),
                         );
                       },
@@ -414,20 +345,9 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                       label: const Text('Detalhes Completos'),
                     ),
                     const Spacer(),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: Imprimir
-                      },
-                      icon: const Icon(Icons.print, size: 18),
-                      label: const Text('Imprimir'),
-                    ),
-                    const SizedBox(width: 16),
                     ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Lógica de Baixa/Pagamento
-                        Navigator.of(
-                          dialogContext,
-                        ).pop(); // Usa o dialogContext
+                        Navigator.of(dialogContext).pop();
                       },
                       icon: const Icon(
                         Icons.check_circle,
@@ -435,7 +355,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                         color: Colors.white,
                       ),
                       label: const Text(
-                        'Pagar Agora',
+                        'Dar Baixa (Receber)',
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -452,7 +372,6 @@ class _PayableListWidgetState extends State<PayableListWidget> {
     );
   }
 
-  // Auxiliar para desenhar os campos do documento
   Widget _buildDocumentField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
