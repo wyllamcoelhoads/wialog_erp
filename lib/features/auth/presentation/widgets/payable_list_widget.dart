@@ -118,6 +118,8 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 borderRadius: BorderRadius.circular(8),
                 child: SingleChildScrollView(
                   child: DataTable(
+                    showCheckboxColumn:
+                        false, // Oculta o checkbox nativo para usarmos o clique na linha inteira
                     headingRowColor: WidgetStateProperty.all(
                       AppColors.background,
                     ),
@@ -161,6 +163,12 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     ],
                     rows: _mockPayables.map((conta) {
                       return DataRow(
+                        // Torna a linha interativa (clicável)
+                        onSelectChanged: (bool? selected) {
+                          if (selected == true) {
+                            _showDocumentDetails(conta);
+                          }
+                        },
                         cells: [
                           DataCell(Text(conta['id'])),
                           DataCell(
@@ -246,6 +254,188 @@ class _PayableListWidgetState extends State<PayableListWidget> {
           fontSize: 12,
         ),
       ),
+    );
+  }
+
+  // ==========================================
+  // MODAL DE VISUALIZAÇÃO DO DOCUMENTO
+  // ==========================================
+  void _showDocumentDetails(Map<String, dynamic> conta) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabeçalho do Documento
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Documento #${conta['id']}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textTitle,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const Divider(height: 32),
+
+                // Corpo do Documento (Detalhes)
+                _buildDocumentField(
+                  'Descrição do Lançamento',
+                  conta['description'],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDocumentField(
+                        'Data de Vencimento',
+                        conta['dueDate'],
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildDocumentField(
+                        'Valor Original',
+                        'R\$ ${conta['value'].toStringAsFixed(2)}',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Status Atual',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          _buildStatusChip(conta['status']),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildDocumentField(
+                        'Categoria',
+                        'Despesa Operacional',
+                      ),
+                    ), // Campo Mockado extra
+                  ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Área de Anexos Fictícia
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.shade300,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf, color: AppColors.error),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'boleto_vencimento.pdf',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      Icon(Icons.download, color: AppColors.textMuted),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Botões de Ação
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: Imprimir
+                      },
+                      icon: const Icon(Icons.print, size: 18),
+                      label: const Text('Imprimir'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Lógica de Baixa/Pagamento
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(
+                        Icons.check_circle,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Pagar Agora',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Auxiliar para desenhar os campos do documento
+  Widget _buildDocumentField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textBody,
+          ),
+        ),
+      ],
     );
   }
 }
