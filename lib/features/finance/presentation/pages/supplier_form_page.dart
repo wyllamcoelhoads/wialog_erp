@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'dart:math'; // NOVO: Para gerar números aleatórios
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -150,7 +151,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                             ),
                             const SizedBox(height: 24),
                             DropdownButtonFormField<String>(
-                              value: _selectedCategory,
+                              initialValue: _selectedCategory,
                               decoration: const InputDecoration(
                                 labelText: 'Categoria de Fornecimento',
                                 prefixIcon: Icon(Icons.category_outlined),
@@ -277,10 +278,11 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                                     setState(() => _isSaving = true);
 
                                     final newSupplier = PartnerEntity(
-                                      id: 'FOR-${DateTime.now().millisecondsSinceEpoch}',
+                                      // Gera um número aleatório entre 100000 e 999999
+                                      id: (100000 + Random().nextInt(899999))
+                                          .toString(),
                                       name: _nameController.text,
-                                      document: _cnpjMask
-                                          .getUnmaskedText(), // Remove pontos e traços
+                                      document: _cnpjMask.getUnmaskedText(),
                                       type: PartnerType.supplier,
                                       contact: _phoneController.text.isNotEmpty
                                           ? _phoneController.text

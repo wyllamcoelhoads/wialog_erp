@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'dart:math'; // NOVO: Para gerar números aleatórios
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -329,10 +330,11 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                     setState(() => _isSaving = true);
 
                                     final newClient = PartnerEntity(
-                                      id: 'CLI-${DateTime.now().millisecondsSinceEpoch}',
+                                      // Gera um número aleatório entre 100000 e 999999
+                                      id: (100000 + Random().nextInt(899999))
+                                          .toString(),
                                       name: _nameController.text,
-                                      document: _docMask
-                                          .getUnmaskedText(), // Salva apenas os números no banco!
+                                      document: _docMask.getUnmaskedText(),
                                       type: PartnerType.client,
                                       contact: _phoneController.text.isNotEmpty
                                           ? _phoneController.text
