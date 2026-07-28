@@ -50,6 +50,18 @@ RF08: O sistema deve permitir a alteração de status financeiro (Pendente, Pago
 
 RF09: O sistema deve gerar um fluxo de caixa simples filtrável por período (mês/ano).
 
+    3.4 Módulo de Segurança e Licenciamento (SaaS)
+
+RF01: O sistema deve validar a licença de uso conectando-se a um banco de dados em nuvem (Firebase) durante a inicialização ou login.
+
+RF02: A validação será feita através do CNPJ da empresa cliente. A nuvem deve retornar o status da assinatura (Ativo, Bloqueado) e uma Data de Validade Limite (ex: data do próximo vencimento + 5 dias de carência).
+
+RF03: Sempre que a validação online for bem-sucedida, o sistema deve salvar essa "Data de Validade Limite" de forma segura no ambiente local da máquina.
+
+RF04: Em caso de falha de conexão com a internet (timeout), o sistema deve operar no modo de Tolerância Offline, permitindo o acesso se a data atual do computador for menor ou igual à "Data de Validade Limite" salva localmente.
+
+RF05: Caso a internet esteja ativa e retorne status "Bloqueado", ou a internet esteja offline e a "Data Limite" local tenha expirado, o acesso deve ser negado com a mensagem "Assinatura Inativa ou Expirada - Contate o Suporte".
+
 ## 4. Regras de Negócio (RN)
 
 Condições que o sistema deve respeitar sempre.
@@ -75,6 +87,8 @@ RNF03 (Arquitetura): O código deve seguir estritamente a Clean Architecture, is
 RNF04 (Gerenciamento de Estado): Utilização do padrão BLoC (Business Logic Component) para reatividade da UI.
 
 RNF05 (Tratamento de Erros): O sistema deve capturar falhas de conexão com o banco local e exibir SnackBar amigável, impedindo o crash (fechamento abrupto) do app.
+
+RNF06 - Segurança Local: A data de validade guardada localmente deve ser ofuscada ou criptografada (ex: pacote flutter_secure_storage) para dificultar a alteração maliciosa pelo cliente.
 
 ## 6. Próximos Passos (Roadmap MVP)
 
