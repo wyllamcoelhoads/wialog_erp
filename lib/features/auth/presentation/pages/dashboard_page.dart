@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
-import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
+import '../../../finance/presentation/pages/finance_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -10,10 +11,8 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // Variável para controlar qual item do menu está selecionado
   int _selectedIndex = 0;
 
-  // Renderiza a tela da direita com base no menu selecionado
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
@@ -21,7 +20,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 1:
         return const Center(child: Text('Módulo de Frotas (Em breve)'));
       case 2:
-        return const FinancePage(); // Chama a nossa nova tela financeira!
+        return const FinancePage();
       default:
         return _buildVisaoGeral();
     }
@@ -30,19 +29,17 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF4F6F8,
-      ), // Fundo cinza bem claro (cara de sistema)
+      // O Scaffold já pega a cor de fundo do main.dart automaticamente, mas podemos garantir:
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
           // Menu Lateral
           Container(
             width: 250,
-            color: const Color(0xFF5D6D7E), // Azul corporativo
+            color: AppColors.sidebar, // Usando a cor padronizada!
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                // Logo e Nome
                 const Icon(Icons.local_shipping, size: 48, color: Colors.white),
                 const SizedBox(height: 10),
                 const Text(
@@ -55,13 +52,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // Itens de Navegação
                 _buildMenuItem(Icons.dashboard, 'Visão Geral', 0),
                 _buildMenuItem(Icons.directions_car, 'Frotas', 1),
                 _buildMenuItem(Icons.account_balance_wallet, 'Financeiro', 2),
 
                 const Spacer(),
-                // Botão de Sair
                 ListTile(
                   leading: const Icon(Icons.logout, color: Colors.white70),
                   title: const Text(
@@ -79,14 +74,12 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ),
 
-          // Área Principal Direita (Muda conforme o menu)
           Expanded(child: _buildBody()),
         ],
       ),
     );
   }
 
-  // Componente para desenhar os botões do menu lateral
   Widget _buildMenuItem(IconData icon, String title, int index) {
     final isSelected = _selectedIndex == index;
 
@@ -110,7 +103,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // A Visão Geral (Dashboard) que você já tinha feito
   Widget _buildVisaoGeral() {
     return Padding(
       padding: const EdgeInsets.all(32.0),
@@ -122,31 +114,37 @@ class _DashboardPageState extends State<DashboardPage> {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2C3E50),
+              color: AppColors.textTitle, // Usando cor de texto padrão
             ),
           ),
           const SizedBox(height: 32),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Usando as cores semânticas padronizadas!
               _buildKpiCard(
                 'Veículos Ativos',
                 '12',
                 Icons.local_shipping,
-                Colors.blue,
+                AppColors.info,
               ),
-              _buildKpiCard('Em Manutenção', '2', Icons.build, Colors.orange),
+              _buildKpiCard(
+                'Em Manutenção',
+                '2',
+                Icons.build,
+                AppColors.warning,
+              ),
               _buildKpiCard(
                 'A Pagar (Mês)',
                 'R\$ 14.500',
                 Icons.arrow_downward,
-                Colors.red,
+                AppColors.error,
               ),
               _buildKpiCard(
                 'A Receber (Mês)',
                 'R\$ 32.800',
                 Icons.arrow_upward,
-                Colors.green,
+                AppColors.success,
               ),
             ],
           ),
@@ -160,7 +158,7 @@ class _DashboardPageState extends State<DashboardPage> {
       width: 220,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -178,7 +176,7 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 14),
               ),
               Icon(icon, color: color),
             ],
@@ -186,7 +184,11 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textTitle,
+            ),
           ),
         ],
       ),
