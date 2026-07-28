@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'dart:math'; // NOVO: Para gerar números aleatórios
+import 'dart:math'; // Para gerar números aleatórios (novo cadastro)
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -11,8 +11,14 @@ import '../bloc/partner/partner_bloc.dart';
 import '../bloc/partner/partner_event.dart';
 import '../bloc/partner/partner_state.dart';
 
+import '../bloc/category/category_bloc.dart';
+import '../bloc/category/category_state.dart';
+
 class SupplierFormPage extends StatefulWidget {
-  const SupplierFormPage({super.key});
+  // NOVO: se vier preenchido, a tela entra em modo de edição
+  final PartnerEntity? partner;
+
+  const SupplierFormPage({super.key, this.partner});
 
   @override
   State<SupplierFormPage> createState() => _SupplierFormPageState();
@@ -23,6 +29,9 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
 
   // Controle de salvamento
   bool _isSaving = false;
+
+  // NOVO: se estamos editando um fornecedor já existente
+  bool get _isEditing => widget.partner != null;
 
   // Máscaras fixas para Fornecedor
   final _cnpjMask = MaskTextInputFormatter(
@@ -41,16 +50,33 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   final _emailController = TextEditingController();
   final _obsController = TextEditingController();
 
-  String _selectedCategory = 'Combustível';
+  int? _selectedCategoryId;
 
-  final List<String> _categories = [
-    'Combustível',
-    'Manutenção',
-    'Peças e Pneus',
-    'Seguros',
-    'Serviços',
-    'Outros',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditing) {
+      _prefillFromPartner(widget.partner!);
+    }
+  }
+
+  // NOVO: preenche o formulário com os dados do fornecedor a ser editado
+  void _prefillFromPartner(PartnerEntity p) {
+    _nameController.text = p.name;
+    _cnpjController.text = _cnpjMask.maskText(p.document);
+
+    // O campo "contact" guarda telefone OU e-mail (o form original salva só um).
+    // Assumindo que contatos com "@" são e-mail e o restante é telefone.
+    if (p.contact.contains('@')) {
+      _emailController.text = p.contact;
+    } else if (p.contact.isNotEmpty) {
+      _phoneController.text = _phoneMask.maskText(p.contact);
+    }
+
+    _selectedCategoryId = p.categoryId;
+    // Observação: "obs" não existe hoje em PartnerEntity,
+    // então não há de onde recuperá-la ao editar (ver nota no chat).
+  }
 
   @override
   void dispose() {
@@ -71,9 +97,9 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
         elevation: 0,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Cadastro de Fornecedor',
-          style: TextStyle(
+        title: Text(
+          _isEditing ? 'Editar Fornecedor' : 'Cadastro de Fornecedor',
+          style: const TextStyle(
             color: AppColors.textTitle,
             fontWeight: FontWeight.bold,
           ),
@@ -92,8 +118,12 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
           } else if (state is PartnerLoaded && _isSaving) {
             setState(() => _isSaving = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fornecedor salvo com sucesso!'),
+              SnackBar(
+                content: Text(
+                  _isEditing
+                      ? 'Fornecedor atualizado com sucesso!'
+                      : 'Fornecedor salvo com sucesso!',
+                ),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -150,23 +180,37 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            DropdownButtonFormField<String>(
-                              initialValue: _selectedCategory,
-                              decoration: const InputDecoration(
-                                labelText: 'Categoria de Fornecimento',
-                                prefixIcon: Icon(Icons.category_outlined),
-                                border: OutlineInputBorder(),
-                              ),
-                              items: _categories.map((cat) {
-                                return DropdownMenuItem(
-                                  value: cat,
-                                  child: Text(cat),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() => _selectedCategory = value);
+
+                            BlocBuilder<CategoryBloc, CategoryState>(
+                              builder: (context, state) {
+                                if (state is CategoryLoading) {
+                                  return const CircularProgressIndicator();
                                 }
+                                if (state is CategoryLoaded) {
+                                  return DropdownButtonFormField<int>(
+                                    initialValue: _selectedCategoryId,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Categoria de Fornecimento',
+                                      prefixIcon: Icon(Icons.category_outlined),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: state.categories.map((cat) {
+                                      return DropdownMenuItem(
+                                        value: cat.id,
+                                        child: Text(cat.name),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) => setState(
+                                      () => _selectedCategoryId = value,
+                                    ),
+                                    validator: (value) => value == null
+                                        ? 'Selecione uma categoria'
+                                        : null,
+                                  );
+                                }
+                                return const Text(
+                                  "Erro ao carregar categorias",
+                                );
                               },
                             ),
                           ],
@@ -271,30 +315,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                         ),
                         const SizedBox(width: 16),
                         FilledButton.icon(
-                          onPressed: _isSaving
-                              ? null
-                              : () {
-                                  if (_formKey.currentState!.validate()) {
-                                    setState(() => _isSaving = true);
-
-                                    final newSupplier = PartnerEntity(
-                                      // Gera um número aleatório entre 100000 e 999999
-                                      id: (100000 + Random().nextInt(899999))
-                                          .toString(),
-                                      name: _nameController.text,
-                                      document: _cnpjMask.getUnmaskedText(),
-                                      type: PartnerType.supplier,
-                                      contact: _phoneController.text.isNotEmpty
-                                          ? _phoneController.text
-                                          : _emailController.text,
-                                      categoryOrCity: _selectedCategory,
-                                    );
-
-                                    context.read<PartnerBloc>().add(
-                                      AddPartner(newSupplier),
-                                    );
-                                  }
-                                },
+                          onPressed: _isSaving ? null : _handleSave,
                           icon: _isSaving
                               ? const SizedBox(
                                   width: 16,
@@ -304,9 +325,13 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.save),
+                              : Icon(_isEditing ? Icons.save_as : Icons.save),
                           label: Text(
-                            _isSaving ? 'Salvando...' : 'Salvar Fornecedor',
+                            _isSaving
+                                ? 'Salvando...'
+                                : (_isEditing
+                                      ? 'Atualizar Fornecedor'
+                                      : 'Salvar Fornecedor'),
                           ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -327,6 +352,35 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
         ),
       ),
     );
+  }
+
+  // NOVO: extraído do onPressed para lidar com criação e edição
+  void _handleSave() {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    final supplier = PartnerEntity(
+      // Mantém o id original ao editar; gera um novo ao criar
+      id: _isEditing
+          ? widget.partner!.id
+          : (100000 + Random().nextInt(899999)).toString(),
+      name: _nameController.text,
+      document: _cnpjMask.getUnmaskedText(),
+      type: PartnerType.supplier,
+      contact: _phoneController.text.isNotEmpty
+          ? _phoneController.text
+          : _emailController.text,
+      city: null, // Fornecedores não usam o campo 'city'
+      categoryId: _selectedCategoryId,
+      isActive: _isEditing ? widget.partner!.isActive : true,
+    );
+
+    if (_isEditing) {
+      context.read<PartnerBloc>().add(UpdatePartner(supplier));
+    } else {
+      context.read<PartnerBloc>().add(AddPartner(supplier));
+    }
   }
 
   void _closeTab(BuildContext context) {

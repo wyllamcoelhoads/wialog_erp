@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'dart:math'; // NOVO: Para gerar números aleatórios
+import 'dart:math'; // Para gerar números aleatórios (novo cadastro)
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -12,7 +12,10 @@ import '../bloc/partner/partner_event.dart';
 import '../bloc/partner/partner_state.dart';
 
 class ClientFormPage extends StatefulWidget {
-  const ClientFormPage({super.key});
+  // NOVO: se vier preenchido, a tela entra em modo de edição
+  final PartnerEntity? partner;
+
+  const ClientFormPage({super.key, this.partner});
 
   @override
   State<ClientFormPage> createState() => _ClientFormPageState();
@@ -25,6 +28,9 @@ class _ClientFormPageState extends State<ClientFormPage> {
   // Controle de Pessoa Física ou Jurídica e Loading
   bool _isPF = false;
   bool _isSaving = false;
+
+  // NOVO: se estamos editando um cliente já existente
+  bool get _isEditing => widget.partner != null;
 
   // Definição das Máscaras
   final _docMask = MaskTextInputFormatter(
@@ -51,6 +57,36 @@ class _ClientFormPageState extends State<ClientFormPage> {
   final _obsController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    if (_isEditing) {
+      _prefillFromPartner(widget.partner!);
+    }
+  }
+
+  // NOVO: preenche o formulário com os dados do cliente a ser editado
+  void _prefillFromPartner(PartnerEntity p) {
+    _nameController.text = p.name;
+
+    // Heurística: CPF tem 11 dígitos, CNPJ tem 14 (documento vem sem máscara)
+    _isPF = p.document.length <= 11;
+    _docMask.updateMask(mask: _isPF ? '###.###.###-##' : '##.###.###/####-##');
+    _docController.text = _docMask.maskText(p.document);
+
+    // O campo "contact" guarda telefone OU e-mail (o form original salva só um).
+    // Assumindo que contatos com "@" são e-mail e o restante é telefone.
+    if (p.contact.contains('@')) {
+      _emailController.text = p.contact;
+    } else if (p.contact.isNotEmpty) {
+      _phoneController.text = _phoneMask.maskText(p.contact);
+    }
+
+    _cityController.text = p.city ?? '';
+    // Observação: "fantasyName" e "obs" não existem hoje em PartnerEntity,
+    // então não há de onde recuperá-los ao editar (ver nota no chat).
+  }
+
+  @override
   void dispose() {
     _docController.dispose();
     _nameController.dispose();
@@ -72,9 +108,9 @@ class _ClientFormPageState extends State<ClientFormPage> {
         elevation: 0,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Cadastro de Cliente',
-          style: TextStyle(
+        title: Text(
+          _isEditing ? 'Editar Cliente' : 'Cadastro de Cliente',
+          style: const TextStyle(
             color: AppColors.textTitle,
             fontWeight: FontWeight.bold,
           ),
@@ -94,8 +130,12 @@ class _ClientFormPageState extends State<ClientFormPage> {
           } else if (state is PartnerLoaded && _isSaving) {
             setState(() => _isSaving = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Cliente salvo com sucesso!'),
+              SnackBar(
+                content: Text(
+                  _isEditing
+                      ? 'Cliente atualizado com sucesso!'
+                      : 'Cliente salvo com sucesso!',
+                ),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -323,30 +363,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                         ),
                         const SizedBox(width: 16),
                         FilledButton.icon(
-                          onPressed: _isSaving
-                              ? null
-                              : () {
-                                  if (_formKey.currentState!.validate()) {
-                                    setState(() => _isSaving = true);
-
-                                    final newClient = PartnerEntity(
-                                      // Gera um número aleatório entre 100000 e 999999
-                                      id: (100000 + Random().nextInt(899999))
-                                          .toString(),
-                                      name: _nameController.text,
-                                      document: _docMask.getUnmaskedText(),
-                                      type: PartnerType.client,
-                                      contact: _phoneController.text.isNotEmpty
-                                          ? _phoneController.text
-                                          : _emailController.text,
-                                      categoryOrCity: _cityController.text,
-                                    );
-
-                                    context.read<PartnerBloc>().add(
-                                      AddPartner(newClient),
-                                    );
-                                  }
-                                },
+                          onPressed: _isSaving ? null : _handleSave,
                           icon: _isSaving
                               ? const SizedBox(
                                   width: 16,
@@ -356,9 +373,13 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Icon(Icons.save),
+                              : Icon(_isEditing ? Icons.save_as : Icons.save),
                           label: Text(
-                            _isSaving ? 'Salvando...' : 'Salvar Cliente',
+                            _isSaving
+                                ? 'Salvando...'
+                                : (_isEditing
+                                      ? 'Atualizar Cliente'
+                                      : 'Salvar Cliente'),
                           ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -379,6 +400,35 @@ class _ClientFormPageState extends State<ClientFormPage> {
         ),
       ),
     );
+  }
+
+  // NOVO: extraído do onPressed para lidar com criação e edição
+  void _handleSave() {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    final client = PartnerEntity(
+      // Mantém o id original ao editar; gera um novo ao criar
+      id: _isEditing
+          ? widget.partner!.id
+          : (100000 + Random().nextInt(899999)).toString(),
+      name: _nameController.text,
+      document: _docMask.getUnmaskedText(),
+      type: PartnerType.client,
+      contact: _phoneController.text.isNotEmpty
+          ? _phoneController.text
+          : _emailController.text,
+      city: _cityController.text,
+      categoryId: null, // Clientes não usam categorias de fornecimento
+      isActive: _isEditing ? widget.partner!.isActive : true,
+    );
+
+    if (_isEditing) {
+      context.read<PartnerBloc>().add(UpdatePartner(client));
+    } else {
+      context.read<PartnerBloc>().add(AddPartner(client));
+    }
   }
 
   void _closeTab(BuildContext context) {
@@ -403,7 +453,6 @@ class _ClientFormPageState extends State<ClientFormPage> {
     );
   }
 
-  // NOVO: Adicionado inputFormatters para aceitar as máscaras!
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -413,7 +462,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
   }) {
     return TextFormField(
       controller: controller,
-      inputFormatters: inputFormatters, // Repassa para o Flutter
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

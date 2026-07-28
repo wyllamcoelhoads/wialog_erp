@@ -29,15 +29,13 @@ class PartnerPostgresDataSource implements PartnerDataSource {
 
     // Filtro por Query (Busca por nome/razão social)
     if (query != null && query.isNotEmpty) {
-      whereClauses.add(
-        'name ILIKE @query or id ILIKE @query or document ILIKE @query',
-      );
+      whereClauses.add('name ILIKE @query');
       params['query'] = '%$query%'; // ILIKE busca em qualquer parte da string
     }
 
     String sql = 'SELECT * FROM partners';
     if (whereClauses.isNotEmpty) {
-      sql += ' WHERE ${whereClauses.join(' AND ')}';
+      sql += ' WHERE ' + whereClauses.join(' AND ');
     }
     sql += ' ORDER BY created_at DESC';
 
@@ -51,8 +49,8 @@ class PartnerPostgresDataSource implements PartnerDataSource {
   @override
   Future<PartnerModel> createPartner(PartnerModel partner) async {
     const sql = '''
-      INSERT INTO partners (id, name, document, type, contact, category_or_city, is_active)
-      VALUES (@id, @name, @document, @type, @contact, @category_or_city, @is_active)
+      INSERT INTO partners (id, name, document, type, contact, category_id, category_or_city, is_active)
+      VALUES (@id, @name, @document, @type, @contact, @category_id, @category_or_city, @is_active)
       RETURNING *;
     ''';
 
@@ -69,6 +67,7 @@ class PartnerPostgresDataSource implements PartnerDataSource {
           document = @document, 
           type = @type, 
           contact = @contact, 
+          category_id = @category_id,
           category_or_city = @category_or_city, 
           is_active = @is_active
       WHERE id = @id

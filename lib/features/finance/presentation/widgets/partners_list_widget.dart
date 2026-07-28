@@ -248,7 +248,13 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                                   DataCell(Text(item.name)),
                                   DataCell(Text(item.document)),
                                   DataCell(Text(item.contact)),
-                                  DataCell(Text(item.categoryOrCity)),
+                                  DataCell(
+                                    Text(
+                                      item.city ??
+                                          item.categoryId?.toString() ??
+                                          '',
+                                    ),
+                                  ),
                                 ],
                               ),
                             )

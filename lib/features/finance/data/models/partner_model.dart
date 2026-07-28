@@ -1,7 +1,5 @@
 import '../../domain/entities/partner_entity.dart';
 
-// O Model é uma extensão da Entity. Ele tem as mesmas propriedades,
-// mas adiciona a "inteligência" de saber como se converter de/para o Banco de Dados.
 class PartnerModel extends PartnerEntity {
   PartnerModel({
     required super.id,
@@ -9,27 +7,26 @@ class PartnerModel extends PartnerEntity {
     required super.document,
     required super.type,
     required super.contact,
-    required super.categoryOrCity,
+    super.categoryId,
+    super.city,
     super.isActive,
   });
 
-  // Pega uma linha do PostgreSQL (que vem como um Map) e transforma num Objeto Dart
   factory PartnerModel.fromMap(Map<String, dynamic> map) {
     return PartnerModel(
       id: map['id'] as String,
       name: map['name'] as String,
       document: map['document'] as String,
-      // Converte a String do banco de volta para o Enum do Dart
       type: map['type'] == 'supplier'
           ? PartnerType.supplier
           : PartnerType.client,
       contact: map['contact'] as String,
-      categoryOrCity: map['category_or_city'] as String,
+      categoryId: map['category_id'] != null ? map['category_id'] as int : null,
+      city: map['category_or_city'] as String?,
       isActive: map['is_active'] as bool,
     );
   }
 
-  // Pega o Objeto Dart e transforma num Map para injetarmos no comando SQL
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -37,7 +34,8 @@ class PartnerModel extends PartnerEntity {
       'document': document,
       'type': type == PartnerType.supplier ? 'supplier' : 'client',
       'contact': contact,
-      'category_or_city': categoryOrCity,
+      'category_id': categoryId,
+      'category_or_city': city,
       'is_active': isActive,
     };
   }
@@ -49,7 +47,8 @@ class PartnerModel extends PartnerEntity {
       document: entity.document,
       type: entity.type,
       contact: entity.contact,
-      categoryOrCity: entity.categoryOrCity,
+      categoryId: entity.categoryId,
+      city: entity.city,
       isActive: entity.isActive,
     );
   }
