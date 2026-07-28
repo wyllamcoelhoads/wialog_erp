@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/partner_entity.dart';
 import '../bloc/partner/partner_bloc.dart';
 import '../bloc/partner/partner_event.dart';
+import '../bloc/partner/partner_state.dart';
 
 class SupplierFormPage extends StatefulWidget {
   const SupplierFormPage({super.key});
@@ -16,6 +20,20 @@ class SupplierFormPage extends StatefulWidget {
 class _SupplierFormPageState extends State<SupplierFormPage> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controle de salvamento
+  bool _isSaving = false;
+
+  // Máscaras fixas para Fornecedor
+  final _cnpjMask = MaskTextInputFormatter(
+    mask: '##.###.###/####-##',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+  final _phoneMask = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+
+  // Controladores
   final _cnpjController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -23,6 +41,15 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   final _obsController = TextEditingController();
 
   String _selectedCategory = 'Combustível';
+
+  final List<String> _categories = [
+    'Combustível',
+    'Manutenção',
+    'Peças e Pneus',
+    'Seguros',
+    'Serviços',
+    'Outros',
+  ];
 
   @override
   void dispose() {
@@ -51,184 +78,247 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSectionTitle('Identificação do Fornecedor'),
-                  Card(
-                    color: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: _buildTextField(
-                                  controller: _cnpjController,
-                                  label: 'CNPJ',
-                                  icon: Icons.domain,
-                                  isRequired: true,
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                flex: 4,
-                                child: _buildTextField(
-                                  controller: _nameController,
-                                  label: 'Razão Social / Nome',
-                                  icon: Icons.business,
-                                  isRequired: true,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: _selectedCategory,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Categoria do Fornecedor',
-                                    prefixIcon: Icon(Icons.category_outlined),
-                                    border: OutlineInputBorder(),
+      body: BlocListener<PartnerBloc, PartnerState>(
+        listener: (context, state) {
+          if (state is PartnerError && _isSaving) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          } else if (state is PartnerLoaded && _isSaving) {
+            setState(() => _isSaving = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Fornecedor salvo com sucesso!'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            _closeTab(context);
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ==========================================
+                    // SEÇÃO 1: IDENTIFICAÇÃO
+                    // ==========================================
+                    _buildSectionTitle('1. Identificação do Fornecedor'),
+                    Card(
+                      color: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: _buildTextField(
+                                    controller: _cnpjController,
+                                    label: 'CNPJ',
+                                    icon: Icons.domain,
+                                    isRequired: true,
+                                    inputFormatters: [_cnpjMask],
                                   ),
-                                  items:
-                                      [
-                                            'Combustível',
-                                            'Manutenção/Peças',
-                                            'Seguros',
-                                            'Impostos/Taxas',
-                                            'Outros',
-                                          ]
-                                          .map(
-                                            (cat) => DropdownMenuItem(
-                                              value: cat,
-                                              child: Text(cat),
-                                            ),
-                                          )
-                                          .toList(),
-                                  onChanged: (val) =>
-                                      setState(() => _selectedCategory = val!),
                                 ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  flex: 4,
+                                  child: _buildTextField(
+                                    controller: _nameController,
+                                    label: 'Razão Social / Nome Fantasia',
+                                    icon: Icons.business,
+                                    isRequired: true,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            DropdownButtonFormField<String>(
+                              value: _selectedCategory,
+                              decoration: const InputDecoration(
+                                labelText: 'Categoria de Fornecimento',
+                                prefixIcon: Icon(Icons.category_outlined),
+                                border: OutlineInputBorder(),
                               ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _phoneController,
-                                  label: 'Telefone Principal',
-                                  icon: Icons.phone,
+                              items: _categories.map((cat) {
+                                return DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() => _selectedCategory = value);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ==========================================
+                    // SEÇÃO 2: CONTATO
+                    // ==========================================
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('2. Contato Principal'),
+                              Card(
+                                color: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey.shade200),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    children: [
+                                      _buildTextField(
+                                        controller: _phoneController,
+                                        label: 'Telefone Principal',
+                                        icon: Icons.phone,
+                                        inputFormatters: [_phoneMask],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _buildTextField(
+                                        controller: _emailController,
+                                        label: 'E-mail para Contato',
+                                        icon: Icons.email_outlined,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'E-mail para Contato',
-                            icon: Icons.email_outlined,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle('Observações Adicionais'),
-                  Card(
-                    color: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: TextFormField(
-                        controller: _obsController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          hintText:
-                              'Detalhes sobre condições de pagamento, prazos de entrega...',
-                          border: OutlineInputBorder(),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      OutlinedButton(
-                        onPressed: () => _closeTab(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                        ),
-                        child: const Text('Cancelar'),
-                      ),
-                      const SizedBox(width: 16),
-                      FilledButton.icon(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // NOVO: Instancia a Entidade do Fornecedor
-                            final newSupplier = PartnerEntity(
-                              id: 'FOR-${DateTime.now().millisecondsSinceEpoch}',
-                              name: _nameController.text,
-                              document: _cnpjController.text,
-                              type: PartnerType.supplier,
-                              contact: _phoneController.text.isNotEmpty
-                                  ? _phoneController.text
-                                  : _emailController.text,
-                              categoryOrCity: _selectedCategory,
-                            );
-
-                            // Dispara pro PostgreSQL
-                            context.read<PartnerBloc>().add(
-                              AddPartner(newSupplier),
-                            );
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Fornecedor salvo com sucesso!'),
-                                backgroundColor: AppColors.success,
+                        const SizedBox(width: 24),
+                        // ==========================================
+                        // SEÇÃO 3: OBSERVAÇÕES
+                        // ==========================================
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('3. Detalhes Adicionais'),
+                              Card(
+                                color: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey.shade200),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: TextFormField(
+                                    controller: _obsController,
+                                    maxLines: 4,
+                                    decoration: const InputDecoration(
+                                      hintText:
+                                          'Detalhes sobre condições de pagamento, prazos de entrega ou nomes de vendedores...',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            );
-                            _closeTab(context);
-                          }
-                        },
-                        icon: const Icon(Icons.save),
-                        label: const Text('Salvar Fornecedor'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
+                            ],
                           ),
-                          backgroundColor: AppColors.primary,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                ],
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // ==========================================
+                    // BOTÕES
+                    // ==========================================
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => _closeTab(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                        const SizedBox(width: 16),
+                        FilledButton.icon(
+                          onPressed: _isSaving
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(() => _isSaving = true);
+
+                                    final newSupplier = PartnerEntity(
+                                      id: 'FOR-${DateTime.now().millisecondsSinceEpoch}',
+                                      name: _nameController.text,
+                                      document: _cnpjMask
+                                          .getUnmaskedText(), // Remove pontos e traços
+                                      type: PartnerType.supplier,
+                                      contact: _phoneController.text.isNotEmpty
+                                          ? _phoneController.text
+                                          : _emailController.text,
+                                      categoryOrCity: _selectedCategory,
+                                    );
+
+                                    context.read<PartnerBloc>().add(
+                                      AddPartner(newSupplier),
+                                    );
+                                  }
+                                },
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.save),
+                          label: Text(
+                            _isSaving ? 'Salvando...' : 'Salvar Fornecedor',
+                          ),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
           ),
@@ -264,9 +354,11 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     required String label,
     required IconData icon,
     bool isRequired = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
