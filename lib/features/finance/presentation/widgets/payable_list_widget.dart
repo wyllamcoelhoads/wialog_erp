@@ -18,12 +18,13 @@ class PayableListWidget extends StatefulWidget {
 
 class _PayableListWidgetState extends State<PayableListWidget> {
   final TextEditingController _searchController = TextEditingController();
+  DateTimeRange? _selectedDateRange;
 
   @override
   void initState() {
     super.initState();
-    // Dispara a busca das Contas a PAGAR ao iniciar a aba
-    _loadDocuments();
+    // NOVO: Limpa a memória global ao entrar nesta aba
+    context.read<DocumentBloc>().add(ClearDocuments());
   }
 
   @override
@@ -34,8 +35,36 @@ class _PayableListWidgetState extends State<PayableListWidget> {
 
   void _loadDocuments() {
     context.read<DocumentBloc>().add(
-      LoadDocuments(type: DocumentType.payable, query: _searchController.text),
+      LoadDocuments(
+        type: DocumentType.payable,
+        query: _searchController.text,
+        startDate: _selectedDateRange?.start,
+        endDate: _selectedDateRange?.end,
+      ),
     );
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _selectedDateRange,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+    }
   }
 
   @override
@@ -46,57 +75,111 @@ class _PayableListWidgetState extends State<PayableListWidget> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 48,
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (_) => _loadDocuments(),
+                    decoration: InputDecoration(
+                      hintText: 'Pesquisar conta, ID ou fornecedor...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
               SizedBox(
-                width: 300,
-                height: 40,
-                child: TextField(
-                  controller: _searchController,
-                  onSubmitted: (_) => _loadDocuments(),
-                  decoration: InputDecoration(
-                    hintText: 'Pesquisar conta ou fornecedor...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 16,
-                    ),
-                    border: OutlineInputBorder(
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _pickDateRange,
+                  icon: const Icon(
+                    Icons.calendar_month,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    _selectedDateRange == null
+                        ? 'Filtrar Período'
+                        : '${_selectedDateRange!.start.day.toString().padLeft(2, '0')}/${_selectedDateRange!.start.month.toString().padLeft(2, '0')} até ${_selectedDateRange!.end.day.toString().padLeft(2, '0')}/${_selectedDateRange!.end.month.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+
+              if (_selectedDateRange != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.clear, color: AppColors.error),
+                    tooltip: 'Limpar Data',
+                    onPressed: () => setState(() => _selectedDateRange = null),
+                  ),
+                ),
+
+              const SizedBox(width: 16),
+
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: _loadDocuments,
+                  icon: const Icon(Icons.manage_search),
+                  label: const Text('Buscar'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
                 ),
               ),
 
-              ElevatedButton.icon(
-                onPressed: () {
-                  DashboardPage.of(context).openTab(
-                    WorkspaceTab(
-                      id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}',
-                      title: 'Nova Despesa',
-                      icon: Icons.remove_circle_outline,
-                      content: const DocumentFormPage(isReceivable: false),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                label: const Text(
-                  'Nova Conta',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error, // Vermelho para saída
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+              const Spacer(),
+
+              SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}',
+                        title: 'Nova Despesa',
+                        icon: Icons.remove_circle_outline,
+                        content: const DocumentFormPage(isReceivable: false),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                  label: const Text(
+                    'Nova Conta',
+                    style: TextStyle(color: Colors.white),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -115,6 +198,31 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 borderRadius: BorderRadius.circular(8),
                 child: BlocBuilder<DocumentBloc, DocumentState>(
                   builder: (context, state) {
+                    // MUDANÇA: Se o BLoC tiver dados, mas forem da aba de Receitas, fingimos que estamos no estado Inicial!
+                    if (state is DocumentInitial ||
+                        (state is DocumentLoaded &&
+                            state.type != DocumentType.payable)) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: AppColors.textMuted,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Utilize os filtros acima e clique em "Buscar"',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                     if (state is DocumentLoading) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -126,7 +234,8 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                         ),
                       );
                     }
-                    if (state is DocumentLoaded) {
+                    if (state is DocumentLoaded &&
+                        state.type == DocumentType.payable) {
                       if (state.documents.isEmpty) {
                         return const Center(
                           child: Text(
@@ -180,7 +289,6 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                             ),
                           ],
                           rows: state.documents.map((conta) {
-                            // Formatação de data (DD/MM/YYYY)
                             final dateStr =
                                 '${conta.dueDate.day.toString().padLeft(2, '0')}/${conta.dueDate.month.toString().padLeft(2, '0')}/${conta.dueDate.year}';
 
@@ -200,9 +308,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                                     ),
                                   ),
                                 ),
-                                DataCell(
-                                  Text(conta.partnerName ?? 'N/A'),
-                                ), // Puxou via SQL JOIN!
+                                DataCell(Text(conta.partnerName ?? 'N/A')),
                                 DataCell(Text(dateStr)),
                                 DataCell(
                                   Text('R\$ ${conta.value.toStringAsFixed(2)}'),
@@ -266,7 +372,6 @@ class _PayableListWidgetState extends State<PayableListWidget> {
   }
 
   void _showDocumentDetails(FinancialDocumentEntity conta) {
-    // Transforma a Entity em Map para aproveitar a tela atual de edição
     final mapDoc = {
       'id': conta.id,
       'description': conta.description,

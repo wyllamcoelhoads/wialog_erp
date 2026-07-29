@@ -13,9 +13,12 @@ class DocumentLoading extends DocumentState {}
 
 class DocumentLoaded extends DocumentState {
   final List<FinancialDocumentEntity> documents;
-  const DocumentLoaded(this.documents);
+  final DocumentType type; // NOVO: Guarda a origem (Pagar ou Receber)
+
+  const DocumentLoaded(this.documents, this.type);
+
   @override
-  List<Object> get props => [documents];
+  List<Object> get props => [documents, type];
 }
 
 class DocumentError extends DocumentState {

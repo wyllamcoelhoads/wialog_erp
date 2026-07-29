@@ -18,11 +18,13 @@ class ReceivableListWidget extends StatefulWidget {
 
 class _ReceivableListWidgetState extends State<ReceivableListWidget> {
   final TextEditingController _searchController = TextEditingController();
+  DateTimeRange? _selectedDateRange;
 
   @override
   void initState() {
     super.initState();
-    _loadDocuments();
+    // NOVO: Limpa a memória global ao entrar nesta aba
+    context.read<DocumentBloc>().add(ClearDocuments());
   }
 
   @override
@@ -36,8 +38,33 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       LoadDocuments(
         type: DocumentType.receivable,
         query: _searchController.text,
+        startDate: _selectedDateRange?.start,
+        endDate: _selectedDateRange?.end,
       ),
     );
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _selectedDateRange,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDateRange = picked;
+      });
+    }
   }
 
   @override
@@ -47,58 +74,117 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // BARRA DE PESQUISA AVANÇADA
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 48,
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (_) => _loadDocuments(),
+                    decoration: InputDecoration(
+                      hintText: 'Pesquisar receita, ID ou cliente...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // BOTÃO DE PERÍODO (DATA)
               SizedBox(
-                width: 300,
-                height: 40,
-                child: TextField(
-                  controller: _searchController,
-                  onSubmitted: (_) => _loadDocuments(),
-                  decoration: InputDecoration(
-                    hintText: 'Pesquisar receita ou cliente...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 0,
-                      horizontal: 16,
-                    ),
-                    border: OutlineInputBorder(
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _pickDateRange,
+                  icon: const Icon(
+                    Icons.calendar_month,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    _selectedDateRange == null
+                        ? 'Filtrar Período'
+                        : '${_selectedDateRange!.start.day.toString().padLeft(2, '0')}/${_selectedDateRange!.start.month.toString().padLeft(2, '0')} até ${_selectedDateRange!.end.day.toString().padLeft(2, '0')}/${_selectedDateRange!.end.month.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: AppColors.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    side: const BorderSide(color: AppColors.primary),
+                  ),
+                ),
+              ),
+
+              // BOTÃO LIMPAR DATA (Aparece só se tiver data selecionada)
+              if (_selectedDateRange != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.clear, color: AppColors.error),
+                    tooltip: 'Limpar Data',
+                    onPressed: () => setState(() => _selectedDateRange = null),
+                  ),
+                ),
+
+              const SizedBox(width: 16),
+
+              // BOTÃO BUSCAR
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: _loadDocuments,
+                  icon: const Icon(Icons.manage_search),
+                  label: const Text('Buscar'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
                 ),
               ),
 
-              ElevatedButton.icon(
-                onPressed: () {
-                  DashboardPage.of(context).openTab(
-                    WorkspaceTab(
-                      id: 'new_rec_${DateTime.now().millisecondsSinceEpoch}',
-                      title: 'Nova Receita',
-                      icon: Icons.add_circle_outline,
-                      content: const DocumentFormPage(isReceivable: true),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                label: const Text(
-                  'Nova Receita',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success, // Verde para Entrada
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+              const Spacer(),
+
+              // BOTÃO NOVA RECEITA
+              SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'new_rec_${DateTime.now().millisecondsSinceEpoch}',
+                        title: 'Nova Receita',
+                        icon: Icons.add_circle_outline,
+                        content: const DocumentFormPage(isReceivable: true),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                  label: const Text(
+                    'Nova Receita',
+                    style: TextStyle(color: Colors.white),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
@@ -106,6 +192,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
           ),
           const SizedBox(height: 24),
 
+          // TABELA DE DADOS
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -117,6 +204,31 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                 borderRadius: BorderRadius.circular(8),
                 child: BlocBuilder<DocumentBloc, DocumentState>(
                   builder: (context, state) {
+                    // MUDANÇA: Tratamento do estado Inicial e bloqueio de vazamento de dados de Despesas
+                    if (state is DocumentInitial ||
+                        (state is DocumentLoaded &&
+                            state.type != DocumentType.receivable)) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: AppColors.textMuted,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Utilize os filtros acima e clique em "Buscar"',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                     if (state is DocumentLoading) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -128,11 +240,12 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                         ),
                       );
                     }
-                    if (state is DocumentLoaded) {
+                    if (state is DocumentLoaded &&
+                        state.type == DocumentType.receivable) {
                       if (state.documents.isEmpty) {
                         return const Center(
                           child: Text(
-                            'Nenhuma conta a receber encontrada.',
+                            'Nenhuma conta encontrada para este filtro.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         );

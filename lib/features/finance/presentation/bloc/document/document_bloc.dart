@@ -7,14 +7,22 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
   final DocumentRepository repository;
 
   DocumentBloc(this.repository) : super(DocumentInitial()) {
+    // NOVO: Volta a tela para o estado vazio inicial
+    on<ClearDocuments>((event, emit) {
+      emit(DocumentInitial());
+    });
+
     on<LoadDocuments>((event, emit) async {
       emit(DocumentLoading());
       try {
         final docs = await repository.getDocuments(
           type: event.type,
           query: event.query,
+          startDate: event.startDate,
+          endDate: event.endDate,
         );
-        emit(DocumentLoaded(docs));
+        // MUDANÇA: Agora o BLoC avisa de qual tipo são esses documentos
+        emit(DocumentLoaded(docs, event.type!));
       } catch (e) {
         emit(DocumentError(e.toString()));
       }
