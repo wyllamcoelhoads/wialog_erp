@@ -15,17 +15,21 @@ class BankAccountPage extends StatefulWidget {
 }
 
 class _BankAccountPageState extends State<BankAccountPage> {
+  // Controle do botão de Inativas
+  bool _showInactive = false;
+
   @override
   void initState() {
     super.initState();
-    context.read<BankAccountBloc>().add(LoadBankAccounts());
+    context.read<BankAccountBloc>().add(
+      LoadBankAccounts(includeInactive: _showInactive),
+    );
   }
 
   void _showAddAccountDialog({BankAccountEntity? account}) {
     final isEditing = account != null;
     final formKey = GlobalKey<FormState>();
 
-    // Se for edição, preenchemos os campos com os dados existentes
     final descriptionController = TextEditingController(
       text: account?.description ?? '',
     );
@@ -157,7 +161,6 @@ class _BankAccountPageState extends State<BankAccountPage> {
                           RegExp(r'^\d+\.?\d{0,2}'),
                         ),
                       ],
-                      // TRAVA DE SEGURANÇA: Bloqueia o saldo se estiver editando!
                       readOnly: isEditing,
                       decoration: InputDecoration(
                         labelText: isEditing
@@ -191,7 +194,6 @@ class _BankAccountPageState extends State<BankAccountPage> {
                     agency: agencyController.text,
                     accountNumber: accountController.text,
                     accountType: selectedType,
-                    // Se estiver editando, mantém os saldos que vieram do banco. Se não, pega do campo.
                     initialBalance: isEditing
                         ? account.initialBalance
                         : double.parse(balanceController.text),
@@ -201,7 +203,6 @@ class _BankAccountPageState extends State<BankAccountPage> {
                     isActive: account?.isActive ?? true,
                   );
 
-                  // Dispara o evento correto (Update se estiver editando, Add se for nova)
                   if (isEditing) {
                     context.read<BankAccountBloc>().add(
                       UpdateBankAccount(newAccount),
@@ -284,21 +285,39 @@ class _BankAccountPageState extends State<BankAccountPage> {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: () =>
-                      _showAddAccountDialog(), // Chama vazio para criar nova
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text(
-                    'Nova Conta',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                Row(
+                  children: [
+                    const Text(
+                      'Mostrar Inativas',
+                      style: TextStyle(color: AppColors.textMuted),
                     ),
-                  ),
+                    Switch(
+                      value: _showInactive,
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() => _showInactive = val);
+                        context.read<BankAccountBloc>().add(
+                          LoadBankAccounts(includeInactive: val),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => _showAddAccountDialog(),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text(
+                        'Nova Conta',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -328,7 +347,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
                       if (state.accounts.isEmpty) {
                         return const Center(
                           child: Text(
-                            'Nenhuma conta cadastrada.',
+                            'Nenhuma conta encontrada.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         );
@@ -387,24 +406,85 @@ class _BankAccountPageState extends State<BankAccountPage> {
 
                             return DataRow(
                               cells: [
-                                DataCell(Text(acc.id.toString())),
                                 DataCell(
                                   Text(
-                                    acc.description,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                    acc.id.toString(),
+                                    style: TextStyle(
+                                      color: acc.isActive
+                                          ? Colors.black
+                                          : Colors.grey,
                                     ),
                                   ),
                                 ),
-                                DataCell(Text(acc.bankName)),
-                                DataCell(Text(agConta)),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      Text(
+                                        acc.description,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: acc.isActive
+                                              ? Colors.black
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      if (!acc.isActive) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.error.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'Inativa',
+                                            style: TextStyle(
+                                              color: AppColors.error,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    acc.bankName,
+                                    style: TextStyle(
+                                      color: acc.isActive
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    agConta,
+                                    style: TextStyle(
+                                      color: acc.isActive
+                                          ? Colors.black
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ),
                                 DataCell(
                                   Text(
                                     'R\$ ${acc.currentBalance.toStringAsFixed(2)}',
                                     style: TextStyle(
-                                      color: acc.currentBalance < 0
-                                          ? AppColors.error
-                                          : AppColors.success,
+                                      color: !acc.isActive
+                                          ? Colors.grey
+                                          : (acc.currentBalance < 0
+                                                ? AppColors.error
+                                                : AppColors.success),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -413,27 +493,27 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // NOVO BOTÃO DE EDITAR
                                       IconButton(
                                         icon: const Icon(
                                           Icons.edit,
                                           color: AppColors.info,
                                           size: 20,
                                         ),
-                                        onPressed: () => _showAddAccountDialog(
-                                          account: acc,
-                                        ), // Passa a conta atual!
+                                        onPressed: () =>
+                                            _showAddAccountDialog(account: acc),
                                         tooltip: 'Editar Conta',
                                       ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: AppColors.error,
-                                          size: 20,
+                                      if (acc
+                                          .isActive) // Só exibe Lixeira se estiver ativa
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: AppColors.error,
+                                            size: 20,
+                                          ),
+                                          onPressed: () => _confirmDelete(acc),
+                                          tooltip: 'Inativar Conta',
                                         ),
-                                        onPressed: () => _confirmDelete(acc),
-                                        tooltip: 'Inativar Conta',
-                                      ),
                                     ],
                                   ),
                                 ),

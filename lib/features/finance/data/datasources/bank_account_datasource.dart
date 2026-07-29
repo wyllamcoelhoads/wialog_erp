@@ -2,7 +2,9 @@ import '../../../../core/database/database_connection.dart';
 import '../models/bank_account_model.dart';
 
 abstract class BankAccountDataSource {
-  Future<List<BankAccountModel>> getBankAccounts();
+  Future<List<BankAccountModel>> getBankAccounts({
+    bool includeInactive = false,
+  });
   Future<BankAccountModel> createBankAccount(BankAccountModel account);
   Future<BankAccountModel> updateBankAccount(BankAccountModel account);
   Future<void> deleteBankAccount(int id);
@@ -13,14 +15,19 @@ class BankAccountPostgresDataSource implements BankAccountDataSource {
   BankAccountPostgresDataSource(this.dbConnection);
 
   @override
-  Future<List<BankAccountModel>> getBankAccounts() async {
-    const sql = '''
+  Future<List<BankAccountModel>> getBankAccounts({
+    bool includeInactive = false,
+  }) async {
+    String sql = '''
       SELECT ba.*, b.name as bank_name 
       FROM bank_accounts ba
       JOIN banks b ON ba.bank_id = b.id
-      WHERE ba.is_active = true
-      ORDER BY ba.description ASC
     ''';
+    if (!includeInactive) {
+      sql += 'WHERE ba.is_active = true ';
+    }
+    sql += 'ORDER BY ba.description ASC';
+
     final result = await dbConnection.query(sql);
     return result
         .map((row) => BankAccountModel.fromMap(row.toColumnMap()))
@@ -34,7 +41,6 @@ class BankAccountPostgresDataSource implements BankAccountDataSource {
       VALUES (@description, @bank_id, @agency, @account_number, @account_type, @initial_balance, @initial_balance)
       RETURNING *;
     ''';
-
     // NOVO: Removemos as chaves que não estão descritas no SQL acima
     final params = account.toMap();
     params.remove('id');

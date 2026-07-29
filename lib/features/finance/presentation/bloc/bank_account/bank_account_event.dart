@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/bank_account_entity.dart';
+import 'package:wialog_erp/features/finance/domain/entities/bank_account_entity.dart';
 
 abstract class BankAccountEvent extends Equatable {
   const BankAccountEvent();
@@ -7,7 +7,15 @@ abstract class BankAccountEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadBankAccounts extends BankAccountEvent {}
+class LoadBankAccounts extends BankAccountEvent {
+  final bool includeInactive;
+  const LoadBankAccounts({
+    this.includeInactive = false,
+  }); // Adicionei o parâmetro includeInactive com valor padrão false
+
+  @override
+  List<Object?> get props => [includeInactive];
+}
 
 class AddBankAccount extends BankAccountEvent {
   final BankAccountEntity account;

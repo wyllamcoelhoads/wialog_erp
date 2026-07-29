@@ -9,8 +9,10 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
   BankAccountRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<BankAccountEntity>> getBankAccounts() async {
-    return await dataSource.getBankAccounts();
+  Future<List<BankAccountEntity>> getBankAccounts({
+    bool includeInactive = false,
+  }) async {
+    return await dataSource.getBankAccounts(includeInactive: includeInactive);
   }
 
   @override
