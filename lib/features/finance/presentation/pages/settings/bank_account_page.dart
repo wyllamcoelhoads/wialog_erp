@@ -18,21 +18,30 @@ class _BankAccountPageState extends State<BankAccountPage> {
   @override
   void initState() {
     super.initState();
-    // Carrega as contas ao abrir a tela
     context.read<BankAccountBloc>().add(LoadBankAccounts());
   }
 
-  void _showAddAccountDialog() {
+  void _showAddAccountDialog({BankAccountEntity? account}) {
+    final isEditing = account != null;
     final formKey = GlobalKey<FormState>();
-    final descriptionController = TextEditingController();
-    final agencyController = TextEditingController();
-    final accountController = TextEditingController();
-    final balanceController = TextEditingController(text: '0.00');
 
-    int selectedBankId = 1; // Padrão: 1 - Caixa Interno
-    AccountType selectedType = AccountType.checking;
+    // Se for edição, preenchemos os campos com os dados existentes
+    final descriptionController = TextEditingController(
+      text: account?.description ?? '',
+    );
+    final agencyController = TextEditingController(text: account?.agency ?? '');
+    final accountController = TextEditingController(
+      text: account?.accountNumber ?? '',
+    );
+    final balanceController = TextEditingController(
+      text: account != null
+          ? account.initialBalance.toStringAsFixed(2)
+          : '0.00',
+    );
 
-    // Lista estática baseada no script SQL que rodamos no banco
+    int selectedBankId = account?.bankId ?? 1;
+    AccountType selectedType = account?.accountType ?? AccountType.checking;
+
     final banks = {
       1: 'Caixa Interno / Cofre',
       2: 'Banco do Brasil',
@@ -50,7 +59,11 @@ class _BankAccountPageState extends State<BankAccountPage> {
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text('Nova Conta Bancária / Caixa'),
+          title: Text(
+            isEditing
+                ? 'Editar Conta Bancária / Caixa'
+                : 'Nova Conta Bancária / Caixa',
+          ),
           content: SizedBox(
             width: 500,
             child: Form(
@@ -144,9 +157,15 @@ class _BankAccountPageState extends State<BankAccountPage> {
                           RegExp(r'^\d+\.?\d{0,2}'),
                         ),
                       ],
-                      decoration: const InputDecoration(
-                        labelText: 'Saldo Inicial (R\$)',
-                        border: OutlineInputBorder(),
+                      // TRAVA DE SEGURANÇA: Bloqueia o saldo se estiver editando!
+                      readOnly: isEditing,
+                      decoration: InputDecoration(
+                        labelText: isEditing
+                            ? 'Saldo Inicial (Bloqueado)'
+                            : 'Saldo Inicial (R\$)',
+                        border: const OutlineInputBorder(),
+                        filled: isEditing,
+                        fillColor: isEditing ? Colors.grey.shade100 : null,
                       ),
                       validator: (val) =>
                           val == null || val.isEmpty ? 'Obrigatório' : null,
@@ -165,28 +184,38 @@ class _BankAccountPageState extends State<BankAccountPage> {
               onPressed: () {
                 if (formKey.currentState!.validate()) {
                   final newAccount = BankAccountEntity(
-                    id: 0, // ID é gerado pelo banco
+                    id: account?.id ?? 0,
                     description: descriptionController.text,
                     bankId: selectedBankId,
                     bankName: banks[selectedBankId] ?? 'Desconhecido',
                     agency: agencyController.text,
                     accountNumber: accountController.text,
                     accountType: selectedType,
-                    initialBalance: double.parse(balanceController.text),
-                    currentBalance: double.parse(
-                      balanceController.text,
-                    ), // Saldo atual começa igual ao inicial
-                    isActive: true,
+                    // Se estiver editando, mantém os saldos que vieram do banco. Se não, pega do campo.
+                    initialBalance: isEditing
+                        ? account.initialBalance
+                        : double.parse(balanceController.text),
+                    currentBalance: isEditing
+                        ? account.currentBalance
+                        : double.parse(balanceController.text),
+                    isActive: account?.isActive ?? true,
                   );
 
-                  context.read<BankAccountBloc>().add(
-                    AddBankAccount(newAccount),
-                  );
+                  // Dispara o evento correto (Update se estiver editando, Add se for nova)
+                  if (isEditing) {
+                    context.read<BankAccountBloc>().add(
+                      UpdateBankAccount(newAccount),
+                    );
+                  } else {
+                    context.read<BankAccountBloc>().add(
+                      AddBankAccount(newAccount),
+                    );
+                  }
                   Navigator.of(dialogContext).pop();
                 }
               },
               style: FilledButton.styleFrom(backgroundColor: AppColors.success),
-              child: const Text('Salvar Conta'),
+              child: Text(isEditing ? 'Atualizar Conta' : 'Salvar Conta'),
             ),
           ],
         );
@@ -256,7 +285,8 @@ class _BankAccountPageState extends State<BankAccountPage> {
                   ],
                 ),
                 ElevatedButton.icon(
-                  onPressed: _showAddAccountDialog,
+                  onPressed: () =>
+                      _showAddAccountDialog(), // Chama vazio para criar nova
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text(
                     'Nova Conta',
@@ -380,14 +410,31 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                   ),
                                 ),
                                 DataCell(
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: AppColors.error,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => _confirmDelete(acc),
-                                    tooltip: 'Inativar Conta',
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // NOVO BOTÃO DE EDITAR
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: AppColors.info,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _showAddAccountDialog(
+                                          account: acc,
+                                        ), // Passa a conta atual!
+                                        tooltip: 'Editar Conta',
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: AppColors.error,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => _confirmDelete(acc),
+                                        tooltip: 'Inativar Conta',
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

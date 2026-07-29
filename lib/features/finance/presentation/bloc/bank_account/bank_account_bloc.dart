@@ -29,6 +29,16 @@ class BankAccountBloc extends Bloc<BankAccountEvent, BankAccountState> {
       }
     });
 
+    on<UpdateBankAccount>((event, emit) async {
+      emit(BankAccountLoading());
+      try {
+        await repository.updateBankAccount(event.account);
+        add(LoadBankAccounts());
+      } catch (e) {
+        emit(BankAccountError('Erro ao atualizar conta: $e'));
+      }
+    });
+
     // Inativar (Soft Delete) uma conta
     on<DeleteBankAccount>((event, emit) async {
       emit(BankAccountLoading());

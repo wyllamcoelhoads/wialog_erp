@@ -32,6 +32,23 @@ class BankAccountRepositoryImpl implements BankAccountRepository {
   }
 
   @override
+  Future<BankAccountEntity> updateBankAccount(BankAccountEntity account) async {
+    final model = BankAccountModel(
+      id: account.id,
+      description: account.description,
+      bankId: account.bankId,
+      bankName: account.bankName,
+      agency: account.agency,
+      accountNumber: account.accountNumber,
+      accountType: account.accountType,
+      initialBalance: account.initialBalance,
+      currentBalance: account.currentBalance,
+      isActive: account.isActive,
+    );
+    return await dataSource.updateBankAccount(model);
+  }
+
+  @override
   Future<void> deleteBankAccount(int id) async {
     await dataSource.deleteBankAccount(id);
   }

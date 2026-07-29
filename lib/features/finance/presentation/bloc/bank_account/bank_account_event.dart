@@ -16,6 +16,13 @@ class AddBankAccount extends BankAccountEvent {
   List<Object?> get props => [account];
 }
 
+class UpdateBankAccount extends BankAccountEvent {
+  final BankAccountEntity account;
+  const UpdateBankAccount(this.account);
+  @override
+  List<Object?> get props => [account];
+}
+
 class DeleteBankAccount extends BankAccountEvent {
   final int id;
   const DeleteBankAccount(this.id);
