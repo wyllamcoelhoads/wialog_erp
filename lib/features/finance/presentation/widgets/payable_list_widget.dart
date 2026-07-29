@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../pages/document_form_page.dart';
 
-// O ERRO ESTAVA AQUI: Faltou a declaração da classe!
+import '../../domain/entities/financial_document_entity.dart';
+import '../bloc/document/document_bloc.dart';
+import '../bloc/document/document_event.dart';
+import '../bloc/document/document_state.dart';
+
 class PayableListWidget extends StatefulWidget {
   const PayableListWidget({super.key});
 
@@ -12,37 +17,26 @@ class PayableListWidget extends StatefulWidget {
 }
 
 class _PayableListWidgetState extends State<PayableListWidget> {
-  // No futuro, isso virá do BLoC / Banco de Dados (PostgreSQL)
-  final List<Map<String, dynamic>> _mockPayables = [
-    {
-      'id': '001',
-      'description': 'Combustível - Posto Ipiranga',
-      'dueDate': '15/08/2026',
-      'value': 2500.00,
-      'status': 'Pago',
-    },
-    {
-      'id': '002',
-      'description': 'Manutenção - Oficina do Zé (Placa ABC-1234)',
-      'dueDate': '20/08/2026',
-      'value': 1200.50,
-      'status': 'Pendente',
-    },
-    {
-      'id': '003',
-      'description': 'Internet e Telefone',
-      'dueDate': '10/08/2026',
-      'value': 299.90,
-      'status': 'Atrasado',
-    },
-    {
-      'id': '004',
-      'description': 'Seguro da Frota',
-      'dueDate': '25/08/2026',
-      'value': 4500.00,
-      'status': 'Pendente',
-    },
-  ];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Dispara a busca das Contas a PAGAR ao iniciar a aba
+    _loadDocuments();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadDocuments() {
+    context.read<DocumentBloc>().add(
+      LoadDocuments(type: DocumentType.payable, query: _searchController.text),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,17 +45,17 @@ class _PayableListWidgetState extends State<PayableListWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Barra de Ferramentas (Search e Botão Adicionar)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Campo de Pesquisa
               SizedBox(
                 width: 300,
                 height: 40,
                 child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (_) => _loadDocuments(),
                   decoration: InputDecoration(
-                    hintText: 'Pesquisar conta...',
+                    hintText: 'Pesquisar conta ou fornecedor...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 0,
@@ -79,16 +73,14 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 ),
               ),
 
-              // Botão de Nova Conta
               ElevatedButton.icon(
                 onPressed: () {
-                  // NOVO: Abre como uma Aba!
                   DashboardPage.of(context).openTab(
                     WorkspaceTab(
-                      id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}', // ID único
-                      title: 'Nova Conta',
-                      icon: Icons.add_circle_outline,
-                      content: const DocumentFormPage(),
+                      id: 'new_doc_${DateTime.now().millisecondsSinceEpoch}',
+                      title: 'Nova Despesa',
+                      icon: Icons.remove_circle_outline,
+                      content: const DocumentFormPage(isReceivable: false),
                     ),
                   );
                 },
@@ -98,7 +90,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.error, // Vermelho para saída
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 16,
@@ -112,7 +104,6 @@ class _PayableListWidgetState extends State<PayableListWidget> {
           ),
           const SizedBox(height: 24),
 
-          // Tabela de Dados com fundo branco e sombra
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -122,101 +113,111 @@ class _PayableListWidgetState extends State<PayableListWidget> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    showCheckboxColumn:
-                        false, // Oculta o checkbox nativo para usarmos o clique na linha inteira
-                    headingRowColor: WidgetStateProperty.all(
-                      AppColors.background,
-                    ),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'ID',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                child: BlocBuilder<DocumentBloc, DocumentState>(
+                  builder: (context, state) {
+                    if (state is DocumentLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (state is DocumentError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(color: AppColors.error),
                         ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Descrição',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Vencimento',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Valor (R\$)',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Ações',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                    rows: _mockPayables.map((conta) {
-                      return DataRow(
-                        // Torna a linha interativa (clicável)
-                        onSelectChanged: (bool? selected) {
-                          if (selected == true) {
-                            _showDocumentDetails(conta);
-                          }
-                        },
-                        cells: [
-                          DataCell(Text(conta['id'])),
-                          DataCell(
-                            Text(
-                              conta['description'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                      );
+                    }
+                    if (state is DocumentLoaded) {
+                      if (state.documents.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'Nenhuma conta a pagar encontrada.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        );
+                      }
+                      return SingleChildScrollView(
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          headingRowColor: WidgetStateProperty.all(
+                            AppColors.background,
+                          ),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'ID',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                          ),
-                          DataCell(Text(conta['dueDate'])),
-                          DataCell(Text(conta['value'].toStringAsFixed(2))),
-                          DataCell(_buildStatusChip(conta['status'])),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 18,
-                                    color: AppColors.info,
+                            DataColumn(
+                              label: Text(
+                                'Descrição',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Fornecedor',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Vencimento',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Valor (R\$)',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Status',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: state.documents.map((conta) {
+                            // Formatação de data (DD/MM/YYYY)
+                            final dateStr =
+                                '${conta.dueDate.day.toString().padLeft(2, '0')}/${conta.dueDate.month.toString().padLeft(2, '0')}/${conta.dueDate.year}';
+
+                            return DataRow(
+                              onSelectChanged: (bool? selected) {
+                                if (selected == true) {
+                                  _showDocumentDetails(conta);
+                                }
+                              },
+                              cells: [
+                                DataCell(Text(conta.id)),
+                                DataCell(
+                                  Text(
+                                    conta.description,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                  tooltip: 'Editar',
-                                  onPressed: () {},
                                 ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 18,
-                                    color: AppColors.success,
-                                  ),
-                                  tooltip: 'Marcar como Pago',
-                                  onPressed: () {},
+                                DataCell(
+                                  Text(conta.partnerName ?? 'N/A'),
+                                ), // Puxou via SQL JOIN!
+                                DataCell(Text(dateStr)),
+                                DataCell(
+                                  Text('R\$ ${conta.value.toStringAsFixed(2)}'),
+                                ),
+                                DataCell(
+                                  _buildStatusChip(conta.status, conta.dueDate),
                                 ),
                               ],
-                            ),
-                          ),
-                        ],
+                            );
+                          }).toList(),
+                        ),
                       );
-                    }).toList(),
-                  ),
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             ),
@@ -226,24 +227,25 @@ class _PayableListWidgetState extends State<PayableListWidget> {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color bgColor;
-    Color textColor;
+  Widget _buildStatusChip(DocumentStatus status, DateTime dueDate) {
+    Color bgColor = AppColors.warning.withValues(alpha: 0.1);
+    Color textColor = AppColors.warning;
+    String label = 'Pendente';
 
-    switch (status) {
-      case 'Pago':
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
-        break;
-      case 'Atrasado':
-        bgColor = AppColors.error.withValues(alpha: 0.1);
-        textColor = AppColors.error;
-        break;
-      case 'Pendente':
-      default:
-        bgColor = AppColors.warning.withValues(alpha: 0.1);
-        textColor = AppColors.warning;
-        break;
+    if (status == DocumentStatus.paid) {
+      bgColor = AppColors.success.withValues(alpha: 0.1);
+      textColor = AppColors.success;
+      label = 'Pago';
+    } else if (status == DocumentStatus.canceled) {
+      bgColor = Colors.grey.withValues(alpha: 0.1);
+      textColor = Colors.grey;
+      label = 'Cancelado';
+    } else if (dueDate.isBefore(
+      DateTime.now().subtract(const Duration(days: 1)),
+    )) {
+      bgColor = AppColors.error.withValues(alpha: 0.1);
+      textColor = AppColors.error;
+      label = 'Atrasado';
     }
 
     return Container(
@@ -253,7 +255,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        status,
+        label,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.bold,
@@ -263,214 +265,28 @@ class _PayableListWidgetState extends State<PayableListWidget> {
     );
   }
 
-  // ==========================================
-  // MODAL DE VISUALIZAÇÃO DO DOCUMENTO
-  // ==========================================
-  void _showDocumentDetails(Map<String, dynamic> conta) {
-    // NOVO: Capturamos o estado do Dashboard ANTES de abrir o modal!
-    // Como o modal fica numa camada superior, ele não "enxergaria" o Dashboard diretamente.
-    final dashboardState = DashboardPage.of(context);
+  void _showDocumentDetails(FinancialDocumentEntity conta) {
+    // Transforma a Entity em Map para aproveitar a tela atual de edição
+    final mapDoc = {
+      'id': conta.id,
+      'description': conta.description,
+      'value': conta.value,
+      'balance': conta.balance,
+      'due_date': conta.dueDate.toIso8601String(),
+      'issue_date': conta.issueDate.toIso8601String(),
+      'category_id': conta.categoryId,
+      'partner_id': conta.partnerId,
+      'status': conta.status.name,
+      'notes': conta.notes,
+    };
 
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        // Renomeamos para dialogContext para não confundir
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            width: 500,
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cabeçalho do Documento
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Documento #${conta['id']}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(
-                        dialogContext,
-                      ).pop(), // Usa o dialogContext
-                    ),
-                  ],
-                ),
-                const Divider(height: 32),
-
-                // Corpo do Documento (Detalhes)
-                _buildDocumentField(
-                  'Descrição do Lançamento',
-                  conta['description'],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDocumentField(
-                        'Data de Vencimento',
-                        conta['dueDate'],
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildDocumentField(
-                        'Valor Original',
-                        'R\$ ${conta['value'].toStringAsFixed(2)}',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Status Atual',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildStatusChip(conta['status']),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildDocumentField(
-                        'Categoria',
-                        'Despesa Operacional',
-                      ),
-                    ), // Campo Mockado extra
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // Área de Anexos Fictícia
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.picture_as_pdf, color: AppColors.error),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          'boleto_vencimento.pdf',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      Icon(Icons.download, color: AppColors.textMuted),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Botões de Ação
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // NOVO BOTÃO: Redireciona para a tela completa passando o documento
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.of(
-                          dialogContext,
-                        ).pop(); // Fecha o modal primeiro
-                        // Usa o estado do Dashboard que salvamos lá em cima!
-                        dashboardState.openTab(
-                          WorkspaceTab(
-                            id: 'doc_${conta['id']}',
-                            title: 'Documento #${conta['id']}',
-                            icon: Icons.description,
-                            content: DocumentFormPage(document: conta),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.fullscreen, size: 18),
-                      label: const Text('Detalhes Completos'),
-                    ),
-                    const Spacer(),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: Imprimir
-                      },
-                      icon: const Icon(Icons.print, size: 18),
-                      label: const Text('Imprimir'),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Lógica de Baixa/Pagamento
-                        Navigator.of(
-                          dialogContext,
-                        ).pop(); // Usa o dialogContext
-                      },
-                      icon: const Icon(
-                        Icons.check_circle,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Pagar Agora',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // Auxiliar para desenhar os campos do documento
-  Widget _buildDocumentField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
-          ),
-        ),
-      ],
+    DashboardPage.of(context).openTab(
+      WorkspaceTab(
+        id: 'edit_doc_${conta.id}',
+        title: 'Despesa #${conta.id}',
+        icon: Icons.description,
+        content: DocumentFormPage(document: mapDoc, isReceivable: false),
+      ),
     );
   }
 }
