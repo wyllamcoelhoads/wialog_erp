@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'dart:math'; // Para gerar números aleatórios (novo cadastro)
+import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -12,7 +12,6 @@ import '../bloc/partner/partner_event.dart';
 import '../bloc/partner/partner_state.dart';
 
 class ClientFormPage extends StatefulWidget {
-  // NOVO: se vier preenchido, a tela entra em modo de edição
   final PartnerEntity? partner;
 
   const ClientFormPage({super.key, this.partner});
@@ -21,18 +20,13 @@ class ClientFormPage extends StatefulWidget {
   State<ClientFormPage> createState() => _ClientFormPageState();
 }
 
-// TUDO QUE MUDA (ESTADO) FICA AQUI DENTRO!
 class _ClientFormPageState extends State<ClientFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controle de Pessoa Física ou Jurídica e Loading
   bool _isPF = false;
   bool _isSaving = false;
-
-  // NOVO: se estamos editando um cliente já existente
   bool get _isEditing => widget.partner != null;
 
-  // Definição das Máscaras
   final _docMask = MaskTextInputFormatter(
     mask: '##.###.###/####-##',
     filter: {"#": RegExp(r'[0-9]')},
@@ -46,7 +40,6 @@ class _ClientFormPageState extends State<ClientFormPage> {
     filter: {"#": RegExp(r'[0-9]')},
   );
 
-  // Controladores dos campos
   final _docController = TextEditingController();
   final _nameController = TextEditingController();
   final _fantasyNameController = TextEditingController();
@@ -64,26 +57,20 @@ class _ClientFormPageState extends State<ClientFormPage> {
     }
   }
 
-  // NOVO: preenche o formulário com os dados do cliente a ser editado
   void _prefillFromPartner(PartnerEntity p) {
-    _nameController.text = p.name;
-
-    // Heurística: CPF tem 11 dígitos, CNPJ tem 14 (documento vem sem máscara)
     _isPF = p.document.length <= 11;
     _docMask.updateMask(mask: _isPF ? '###.###.###-##' : '##.###.###/####-##');
-    _docController.text = _docMask.maskText(p.document);
 
-    // O campo "contact" guarda telefone OU e-mail (o form original salva só um).
-    // Assumindo que contatos com "@" são e-mail e o restante é telefone.
+    _nameController.text = p.name;
+    // Garante que o documento vindo do banco seja formatado na tela
+    _docController.text = _docMask.maskText(p.document);
+    _cityController.text = p.city ?? '';
+
     if (p.contact.contains('@')) {
       _emailController.text = p.contact;
     } else if (p.contact.isNotEmpty) {
       _phoneController.text = _phoneMask.maskText(p.contact);
     }
-
-    _cityController.text = p.city ?? '';
-    // Observação: "fantasyName" e "obs" não existem hoje em PartnerEntity,
-    // então não há de onde recuperá-los ao editar (ver nota no chat).
   }
 
   @override
@@ -115,8 +102,21 @@ class _ClientFormPageState extends State<ClientFormPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              tooltip: 'Excluir Cliente',
+              onPressed: () {
+                context.read<PartnerBloc>().add(
+                  DeletePartner(widget.partner!.id),
+                );
+                _closeTab(context);
+              },
+            ),
+          const SizedBox(width: 16),
+        ],
       ),
-      // O BlocListener escuta as respostas do banco de dados
       body: BlocListener<PartnerBloc, PartnerState>(
         listener: (context, state) {
           if (state is PartnerError && _isSaving) {
@@ -191,7 +191,6 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                 setState(() {
                                   _isPF = selection.first;
                                   _docController.clear();
-                                  // Troca a máscara em tempo real
                                   _docMask.updateMask(
                                     mask: _isPF
                                         ? '###.###.###-##'
@@ -210,9 +209,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                     label: _isPF ? 'CPF' : 'CNPJ',
                                     icon: Icons.badge_outlined,
                                     isRequired: true,
-                                    inputFormatters: [
-                                      _docMask,
-                                    ], // Aplica a máscara
+                                    inputFormatters: [_docMask],
                                   ),
                                 ),
                                 const SizedBox(width: 24),
@@ -268,9 +265,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                         controller: _phoneController,
                                         label: 'Telefone / WhatsApp',
                                         icon: Icons.phone_outlined,
-                                        inputFormatters: [
-                                          _phoneMask,
-                                        ], // Aplica a máscara
+                                        inputFormatters: [_phoneMask],
                                       ),
                                       const SizedBox(height: 16),
                                       _buildTextField(
@@ -309,9 +304,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                                               controller: _cepController,
                                               label: 'CEP',
                                               icon: Icons.map_outlined,
-                                              inputFormatters: [
-                                                _cepMask,
-                                              ], // Aplica a máscara
+                                              inputFormatters: [_cepMask],
                                             ),
                                           ),
                                           const SizedBox(width: 16),
@@ -345,7 +338,6 @@ class _ClientFormPageState extends State<ClientFormPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 32),
 
                     Row(
@@ -402,26 +394,26 @@ class _ClientFormPageState extends State<ClientFormPage> {
     );
   }
 
-  // NOVO: extraído do onPressed para lidar com criação e edição
   void _handleSave() {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
 
     final client = PartnerEntity(
-      // Mantém o id original ao editar; gera um novo ao criar
       id: _isEditing
           ? widget.partner!.id
           : (100000 + Random().nextInt(899999)).toString(),
       name: _nameController.text,
-      document: _docMask.getUnmaskedText(),
+      document: _docMask.getUnmaskedText(), // Salva sem pontuação
       type: PartnerType.client,
       contact: _phoneController.text.isNotEmpty
           ? _phoneController.text
           : _emailController.text,
       city: _cityController.text,
-      categoryId: null, // Clientes não usam categorias de fornecimento
-      isActive: _isEditing ? widget.partner!.isActive : true,
+      categoryId: null,
+      isActive: _isEditing
+          ? widget.partner!.isActive
+          : true, // Preserva o status ao editar
     );
 
     if (_isEditing) {

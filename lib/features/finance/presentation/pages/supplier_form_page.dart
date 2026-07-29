@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'dart:math'; // Para gerar números aleatórios (novo cadastro)
+import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -10,12 +11,10 @@ import '../../domain/entities/partner_entity.dart';
 import '../bloc/partner/partner_bloc.dart';
 import '../bloc/partner/partner_event.dart';
 import '../bloc/partner/partner_state.dart';
-
 import '../bloc/category/category_bloc.dart';
 import '../bloc/category/category_state.dart';
 
 class SupplierFormPage extends StatefulWidget {
-  // NOVO: se vier preenchido, a tela entra em modo de edição
   final PartnerEntity? partner;
 
   const SupplierFormPage({super.key, this.partner});
@@ -27,13 +26,9 @@ class SupplierFormPage extends StatefulWidget {
 class _SupplierFormPageState extends State<SupplierFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controle de salvamento
   bool _isSaving = false;
-
-  // NOVO: se estamos editando um fornecedor já existente
   bool get _isEditing => widget.partner != null;
 
-  // Máscaras fixas para Fornecedor
   final _cnpjMask = MaskTextInputFormatter(
     mask: '##.###.###/####-##',
     filter: {"#": RegExp(r'[0-9]')},
@@ -43,7 +38,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     filter: {"#": RegExp(r'[0-9]')},
   );
 
-  // Controladores
   final _cnpjController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -55,18 +49,18 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   @override
   void initState() {
     super.initState();
+    context.read<CategoryBloc>().add(LoadCategories());
+
     if (_isEditing) {
       _prefillFromPartner(widget.partner!);
     }
   }
 
-  // NOVO: preenche o formulário com os dados do fornecedor a ser editado
   void _prefillFromPartner(PartnerEntity p) {
     _nameController.text = p.name;
+    // Aplica a máscara no documento que vem limpo do banco
     _cnpjController.text = _cnpjMask.maskText(p.document);
 
-    // O campo "contact" guarda telefone OU e-mail (o form original salva só um).
-    // Assumindo que contatos com "@" são e-mail e o restante é telefone.
     if (p.contact.contains('@')) {
       _emailController.text = p.contact;
     } else if (p.contact.isNotEmpty) {
@@ -74,8 +68,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     }
 
     _selectedCategoryId = p.categoryId;
-    // Observação: "obs" não existe hoje em PartnerEntity,
-    // então não há de onde recuperá-la ao editar (ver nota no chat).
   }
 
   @override
@@ -104,6 +96,20 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              tooltip: 'Excluir Fornecedor',
+              onPressed: () {
+                context.read<PartnerBloc>().add(
+                  DeletePartner(widget.partner!.id),
+                );
+                _closeTab(context);
+              },
+            ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: BlocListener<PartnerBloc, PartnerState>(
         listener: (context, state) {
@@ -140,9 +146,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ==========================================
-                    // SEÇÃO 1: IDENTIFICAÇÃO
-                    // ==========================================
                     _buildSectionTitle('1. Identificação do Fornecedor'),
                     Card(
                       color: Colors.white,
@@ -180,7 +183,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                               ],
                             ),
                             const SizedBox(height: 24),
-
                             BlocBuilder<CategoryBloc, CategoryState>(
                               builder: (context, state) {
                                 if (state is CategoryLoading) {
@@ -219,9 +221,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ==========================================
-                    // SEÇÃO 2: CONTATO
-                    // ==========================================
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -261,9 +260,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                           ),
                         ),
                         const SizedBox(width: 24),
-                        // ==========================================
-                        // SEÇÃO 3: OBSERVAÇÕES
-                        // ==========================================
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +279,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                                     maxLines: 4,
                                     decoration: const InputDecoration(
                                       hintText:
-                                          'Detalhes sobre condições de pagamento, prazos de entrega ou nomes de vendedores...',
+                                          'Detalhes sobre condições de pagamento, prazos de entrega...',
                                       border: OutlineInputBorder(),
                                     ),
                                   ),
@@ -294,12 +290,8 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 32),
 
-                    // ==========================================
-                    // BOTÕES
-                    // ==========================================
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -343,7 +335,6 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -354,26 +345,28 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     );
   }
 
-  // NOVO: extraído do onPressed para lidar com criação e edição
   void _handleSave() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _selectedCategoryId == null) {
+      return;
+    }
 
     setState(() => _isSaving = true);
 
     final supplier = PartnerEntity(
-      // Mantém o id original ao editar; gera um novo ao criar
       id: _isEditing
           ? widget.partner!.id
           : (100000 + Random().nextInt(899999)).toString(),
       name: _nameController.text,
-      document: _cnpjMask.getUnmaskedText(),
+      document: _cnpjMask.getUnmaskedText(), // Salva apenas os números
       type: PartnerType.supplier,
       contact: _phoneController.text.isNotEmpty
           ? _phoneController.text
           : _emailController.text,
-      city: null, // Fornecedores não usam o campo 'city'
+      city: null,
       categoryId: _selectedCategoryId,
-      isActive: _isEditing ? widget.partner!.isActive : true,
+      isActive: _isEditing
+          ? widget.partner!.isActive
+          : true, // Preserva o status original
     );
 
     if (_isEditing) {

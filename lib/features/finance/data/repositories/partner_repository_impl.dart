@@ -30,4 +30,9 @@ class PartnerRepositoryImpl implements PartnerRepository {
     final model = PartnerModel.fromEntity(partner);
     return await dataSource.updatePartner(model);
   }
+
+  @override
+  Future<void> deletePartner(String id) async {
+    await dataSource.deletePartner(id);
+  }
 }

@@ -11,7 +11,7 @@ abstract class PartnerEvent extends Equatable {
 // Evento: Pedir para a tela carregar a lista do banco com filtros opcionais
 class LoadPartners extends PartnerEvent {
   final PartnerType? type;
-  final String? query; // Campo de busca
+  final String? query; // NOVO: Campo de busca
 
   const LoadPartners({this.type, this.query});
 
@@ -29,7 +29,7 @@ class AddPartner extends PartnerEvent {
   List<Object?> get props => [partner];
 }
 
-// NOVO: Evento para atualizar um parceiro existente (edição)
+// Evento: Atualizar parceiro existente
 class UpdatePartner extends PartnerEvent {
   final PartnerEntity partner;
 
@@ -39,16 +39,12 @@ class UpdatePartner extends PartnerEvent {
   List<Object?> get props => [partner];
 }
 
-// NOVO: Evento para excluir um parceiro pelo id.
-// Recebe o filtro atual (type/query) para recarregar a lista certa
-// depois de excluir, em vez de sempre voltar para "todos".
+// Evento: Deletar parceiro (Soft Delete)
 class DeletePartner extends PartnerEvent {
   final String id;
-  final PartnerType? currentType;
-  final String? currentQuery;
 
-  const DeletePartner(this.id, {this.currentType, this.currentQuery});
+  const DeletePartner(this.id);
 
   @override
-  List<Object?> get props => [id, currentType, currentQuery];
+  List<Object?> get props => [id];
 }

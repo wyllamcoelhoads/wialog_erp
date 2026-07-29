@@ -9,4 +9,6 @@ abstract class PartnerRepository {
   Future<PartnerEntity> createPartner(PartnerEntity partner);
 
   Future<PartnerEntity> updatePartner(PartnerEntity partner);
+
+  Future<void> deletePartner(String id);
 }

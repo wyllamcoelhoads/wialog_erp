@@ -205,6 +205,8 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
 
                     return SingleChildScrollView(
                       child: DataTable(
+                        // MÁGICA 1: Isso esconde os checkboxes e permite clicar na linha toda
+                        showCheckboxColumn: false,
                         headingRowColor: WidgetStateProperty.all(
                           AppColors.background,
                         ),
@@ -243,6 +245,37 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                         rows: state.partners
                             .map(
                               (item) => DataRow(
+                                // MÁGICA 2: O evento de clique na linha!
+                                onSelectChanged: (selected) {
+                                  if (selected == true) {
+                                    final dashboardState = DashboardPage.of(
+                                      context,
+                                    );
+                                    if (isClientView) {
+                                      dashboardState.openTab(
+                                        WorkspaceTab(
+                                          id: 'edit_client_${item.id}',
+                                          title: 'Editar Cliente',
+                                          icon: Icons.edit,
+                                          content: ClientFormPage(
+                                            partner: item,
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      dashboardState.openTab(
+                                        WorkspaceTab(
+                                          id: 'edit_supplier_${item.id}',
+                                          title: 'Editar Fornecedor',
+                                          icon: Icons.edit,
+                                          content: SupplierFormPage(
+                                            partner: item,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
                                 cells: [
                                   DataCell(Text(item.id.toString())),
                                   DataCell(Text(item.name)),

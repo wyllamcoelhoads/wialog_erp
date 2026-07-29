@@ -9,6 +9,8 @@ class PartnerBloc extends Bloc<PartnerEvent, PartnerState> {
   PartnerBloc(this.repository) : super(PartnerInitial()) {
     on<LoadPartners>(_onLoadPartners);
     on<AddPartner>(_onAddPartner);
+    on<UpdatePartner>(_onUpdatePartner);
+    on<DeletePartner>(_onDeletePartner);
   }
 
   Future<void> _onLoadPartners(
@@ -41,6 +43,34 @@ class PartnerBloc extends Bloc<PartnerEvent, PartnerState> {
       add(const LoadPartners());
     } catch (e) {
       emit(PartnerError('Erro ao salvar parceiro: $e'));
+    }
+  }
+
+  Future<void> _onUpdatePartner(
+    UpdatePartner event,
+    Emitter<PartnerState> emit,
+  ) async {
+    emit(PartnerLoading());
+
+    try {
+      await repository.updatePartner(event.partner);
+      add(const LoadPartners());
+    } catch (e) {
+      emit(PartnerError('Erro ao atualizar parceiro: $e'));
+    }
+  }
+
+  Future<void> _onDeletePartner(
+    DeletePartner event,
+    Emitter<PartnerState> emit,
+  ) async {
+    emit(PartnerLoading());
+
+    try {
+      await repository.deletePartner(event.id);
+      add(const LoadPartners());
+    } catch (e) {
+      emit(PartnerError('Erro ao excluir parceiro: $e'));
     }
   }
 }

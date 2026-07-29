@@ -6,6 +6,7 @@ abstract class PartnerDataSource {
   Future<List<PartnerModel>> getPartners({PartnerType? type, String? query});
   Future<PartnerModel> createPartner(PartnerModel partner);
   Future<PartnerModel> updatePartner(PartnerModel partner);
+  Future<void> deletePartner(String id);
 }
 
 class PartnerPostgresDataSource implements PartnerDataSource {
@@ -18,7 +19,9 @@ class PartnerPostgresDataSource implements PartnerDataSource {
     PartnerType? type,
     String? query,
   }) async {
-    List<String> whereClauses = [];
+    List<String> whereClauses = [
+      'is_active = true',
+    ]; // NOVO: Filtro para pegar só os ativos
     Map<String, dynamic> params = {};
 
     // Filtro por Tipo (Cliente ou Fornecedor)
@@ -77,5 +80,12 @@ class PartnerPostgresDataSource implements PartnerDataSource {
     final result = await dbConnection.query(sql, partner.toMap());
 
     return PartnerModel.fromMap(result.first.toColumnMap());
+  }
+
+  @override
+  Future<void> deletePartner(String id) async {
+    // Soft delete: Apenas desativa o registro para preservar o histórico de pagamentos atrelados
+    const sql = 'UPDATE partners SET is_active = false WHERE id = @id';
+    await dbConnection.query(sql, {'id': id});
   }
 }
