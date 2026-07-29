@@ -398,13 +398,15 @@ class _ClientFormPageState extends State<ClientFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
+    // NOVO: Pega o texto do controlador e remove tudo que não for número
+    final rawDocument = _docController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     final client = PartnerEntity(
       id: _isEditing
           ? widget.partner!.id
           : (100000 + Random().nextInt(899999)).toString(),
       name: _nameController.text,
-      document: _docMask.getUnmaskedText(), // Salva sem pontuação
+      document: rawDocument, // Salva apenas os números
       type: PartnerType.client,
       contact: _phoneController.text.isNotEmpty
           ? _phoneController.text

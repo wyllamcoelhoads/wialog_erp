@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wialog_erp/features/finance/domain/entities/category_entity.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 
@@ -49,7 +50,10 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   @override
   void initState() {
     super.initState();
-    context.read<CategoryBloc>().add(LoadCategories());
+    // Busca apenas as categorias exclusivas de Fornecedores
+    context.read<CategoryBloc>().add(
+      const LoadCategories(type: CategoryType.supplier),
+    );
 
     if (_isEditing) {
       _prefillFromPartner(widget.partner!);
@@ -189,15 +193,24 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                                   return const CircularProgressIndicator();
                                 }
                                 if (state is CategoryLoaded) {
+                                  // PROTEÇÃO: Garante que o ID selecionado existe na lista atual
+                                  final bool categoryExists = state.categories
+                                      .any(
+                                        (cat) => cat.id == _selectedCategoryId,
+                                      );
+                                  final int? safeValue = categoryExists
+                                      ? _selectedCategoryId
+                                      : null;
+
                                   return DropdownButtonFormField<int>(
-                                    initialValue: _selectedCategoryId,
+                                    initialValue: safeValue,
                                     decoration: const InputDecoration(
-                                      labelText: 'Categoria de Fornecimento',
+                                      labelText: 'Categoria',
                                       prefixIcon: Icon(Icons.category_outlined),
                                       border: OutlineInputBorder(),
                                     ),
                                     items: state.categories.map((cat) {
-                                      return DropdownMenuItem(
+                                      return DropdownMenuItem<int>(
                                         value: cat.id,
                                         child: Text(cat.name),
                                       );
@@ -351,13 +364,15 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     }
 
     setState(() => _isSaving = true);
+    // NOVO: Pega o texto do controlador e remove tudo que não for número
+    final rawDocument = _cnpjController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     final supplier = PartnerEntity(
       id: _isEditing
           ? widget.partner!.id
           : (100000 + Random().nextInt(899999)).toString(),
       name: _nameController.text,
-      document: _cnpjMask.getUnmaskedText(), // Salva apenas os números
+      document: rawDocument, // Salva apenas os números
       type: PartnerType.supplier,
       contact: _phoneController.text.isNotEmpty
           ? _phoneController.text
