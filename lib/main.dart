@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/document/document_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'dart:io' show Platform;
 
@@ -45,6 +46,7 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<CategoryBloc>(
           create: (context) => CategoryBloc(sl())..add(LoadCategories()),
         ), // ADD THIS!
+        BlocProvider<DocumentBloc>(create: (context) => sl<DocumentBloc>()),
       ],
       child: MaterialApp(
         title: 'WiaLog ERP',

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../pages/document_form_page.dart';
+
+import '../../domain/entities/financial_document_entity.dart';
+import '../bloc/document/document_bloc.dart';
+import '../bloc/document/document_event.dart';
+import '../bloc/document/document_state.dart';
 
 class ReceivableListWidget extends StatefulWidget {
   const ReceivableListWidget({super.key});
@@ -11,41 +17,28 @@ class ReceivableListWidget extends StatefulWidget {
 }
 
 class _ReceivableListWidgetState extends State<ReceivableListWidget> {
-  // Mock de dados focados em faturamento de fretes
-  final List<Map<String, dynamic>> _mockReceivables = [
-    {
-      'id': '101',
-      'description': 'Frete - Rota SP x RJ (Carga Seca)',
-      'client': 'Indústrias ABC Ltda',
-      'dueDate': '05/08/2026',
-      'value': 4500.00,
-      'status': 'Recebido',
-    },
-    {
-      'id': '102',
-      'description': 'Frete Fracionado - Sul',
-      'client': 'Comércio Varejista XYZ',
-      'dueDate': '18/08/2026',
-      'value': 1850.75,
-      'status': 'Pendente',
-    },
-    {
-      'id': '103',
-      'description': 'Contrato Logístico Mensal',
-      'client': 'Supermercados Global',
-      'dueDate': '01/08/2026',
-      'value': 12000.00,
-      'status': 'Atrasado',
-    },
-    {
-      'id': '104',
-      'description': 'Frete - Rota GO x PR (Refrigerada)',
-      'client': 'Agropecuária Norte',
-      'dueDate': '28/08/2026',
-      'value': 8900.00,
-      'status': 'Pendente',
-    },
-  ];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDocuments();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _loadDocuments() {
+    context.read<DocumentBloc>().add(
+      LoadDocuments(
+        type: DocumentType.receivable,
+        query: _searchController.text,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +47,6 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Barra de Ferramentas
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -62,6 +54,8 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                 width: 300,
                 height: 40,
                 child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (_) => _loadDocuments(),
                   decoration: InputDecoration(
                     hintText: 'Pesquisar receita ou cliente...',
                     prefixIcon: const Icon(Icons.search, size: 20),
@@ -88,7 +82,6 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                       id: 'new_rec_${DateTime.now().millisecondsSinceEpoch}',
                       title: 'Nova Receita',
                       icon: Icons.add_circle_outline,
-                      // NOVO: Passamos isReceivable como true!
                       content: const DocumentFormPage(isReceivable: true),
                     ),
                   );
@@ -99,8 +92,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                   style: TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors
-                      .success, // Verde para indicar entrada de dinheiro
+                  backgroundColor: AppColors.success, // Verde para Entrada
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 16,
@@ -123,75 +115,113 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: SingleChildScrollView(
-                  child: DataTable(
-                    showCheckboxColumn: false,
-                    headingRowColor: WidgetStateProperty.all(
-                      AppColors.background,
-                    ),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'ID',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                child: BlocBuilder<DocumentBloc, DocumentState>(
+                  builder: (context, state) {
+                    if (state is DocumentLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (state is DocumentError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(color: AppColors.error),
                         ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Descrição',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Cliente',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Vencimento',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Valor (R\$)',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                    rows: _mockReceivables.map((receita) {
-                      return DataRow(
-                        onSelectChanged: (bool? selected) {
-                          if (selected == true) {
-                            _showDocumentDetails(receita);
-                          }
-                        },
-                        cells: [
-                          DataCell(Text(receita['id'])),
-                          DataCell(
-                            Text(
-                              receita['description'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                      );
+                    }
+                    if (state is DocumentLoaded) {
+                      if (state.documents.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'Nenhuma conta a receber encontrada.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        );
+                      }
+                      return SingleChildScrollView(
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          headingRowColor: WidgetStateProperty.all(
+                            AppColors.background,
+                          ),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'ID',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
-                          ),
-                          DataCell(Text(receita['client'])),
-                          DataCell(Text(receita['dueDate'])),
-                          DataCell(Text(receita['value'].toStringAsFixed(2))),
-                          DataCell(_buildStatusChip(receita['status'])),
-                        ],
+                            DataColumn(
+                              label: Text(
+                                'Descrição',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Cliente',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Vencimento',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Valor (R\$)',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Status',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                          rows: state.documents.map((receita) {
+                            final dateStr =
+                                '${receita.dueDate.day.toString().padLeft(2, '0')}/${receita.dueDate.month.toString().padLeft(2, '0')}/${receita.dueDate.year}';
+
+                            return DataRow(
+                              onSelectChanged: (bool? selected) {
+                                if (selected == true) {
+                                  _showDocumentDetails(receita);
+                                }
+                              },
+                              cells: [
+                                DataCell(Text(receita.id)),
+                                DataCell(
+                                  Text(
+                                    receita.description,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text(receita.partnerName ?? 'N/A')),
+                                DataCell(Text(dateStr)),
+                                DataCell(
+                                  Text(
+                                    'R\$ ${receita.value.toStringAsFixed(2)}',
+                                  ),
+                                ),
+                                DataCell(
+                                  _buildStatusChip(
+                                    receita.status,
+                                    receita.dueDate,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       );
-                    }).toList(),
-                  ),
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             ),
@@ -201,24 +231,25 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
     );
   }
 
-  Widget _buildStatusChip(String status) {
-    Color bgColor;
-    Color textColor;
+  Widget _buildStatusChip(DocumentStatus status, DateTime dueDate) {
+    Color bgColor = AppColors.info.withValues(alpha: 0.1);
+    Color textColor = AppColors.info;
+    String label = 'A Receber';
 
-    switch (status) {
-      case 'Recebido':
-        bgColor = AppColors.success.withValues(alpha: 0.1);
-        textColor = AppColors.success;
-        break;
-      case 'Atrasado':
-        bgColor = AppColors.error.withValues(alpha: 0.1);
-        textColor = AppColors.error;
-        break;
-      case 'Pendente':
-      default:
-        bgColor = AppColors.info.withValues(alpha: 0.1);
-        textColor = AppColors.info;
-        break;
+    if (status == DocumentStatus.paid) {
+      bgColor = AppColors.success.withValues(alpha: 0.1);
+      textColor = AppColors.success;
+      label = 'Recebido';
+    } else if (status == DocumentStatus.canceled) {
+      bgColor = Colors.grey.withValues(alpha: 0.1);
+      textColor = Colors.grey;
+      label = 'Cancelado';
+    } else if (dueDate.isBefore(
+      DateTime.now().subtract(const Duration(days: 1)),
+    )) {
+      bgColor = AppColors.error.withValues(alpha: 0.1);
+      textColor = AppColors.error;
+      label = 'Atrasado';
     }
 
     return Container(
@@ -228,7 +259,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
-        status,
+        label,
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.bold,
@@ -238,158 +269,27 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
     );
   }
 
-  void _showDocumentDetails(Map<String, dynamic> conta) {
-    final dashboardState = DashboardPage.of(context);
+  void _showDocumentDetails(FinancialDocumentEntity receita) {
+    final mapDoc = {
+      'id': receita.id,
+      'description': receita.description,
+      'value': receita.value,
+      'balance': receita.balance,
+      'due_date': receita.dueDate.toIso8601String(),
+      'issue_date': receita.issueDate.toIso8601String(),
+      'category_id': receita.categoryId,
+      'partner_id': receita.partnerId,
+      'status': receita.status.name,
+      'notes': receita.notes,
+    };
 
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            width: 500,
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Faturamento #${conta['id']}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                    ),
-                  ],
-                ),
-                const Divider(height: 32),
-
-                _buildDocumentField(
-                  'Descrição do Faturamento',
-                  conta['description'],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDocumentField(
-                        'Data de Vencimento',
-                        conta['dueDate'],
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildDocumentField(
-                        'Valor a Receber',
-                        'R\$ ${conta['value'].toStringAsFixed(2)}',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Status Atual',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _buildStatusChip(conta['status']),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildDocumentField('Cliente', conta['client']),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                        dashboardState.openTab(
-                          WorkspaceTab(
-                            id: 'rec_${conta['id']}',
-                            title: 'Receita #${conta['id']}',
-                            icon: Icons.request_quote,
-                            content: DocumentFormPage(
-                              document: conta,
-                              isReceivable: true,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.fullscreen, size: 18),
-                      label: const Text('Detalhes Completos'),
-                    ),
-                    const Spacer(),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                      },
-                      icon: const Icon(
-                        Icons.check_circle,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Dar Baixa (Receber)',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDocumentField(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
-          ),
-        ),
-      ],
+    DashboardPage.of(context).openTab(
+      WorkspaceTab(
+        id: 'edit_rec_${receita.id}',
+        title: 'Receita #${receita.id}',
+        icon: Icons.request_quote,
+        content: DocumentFormPage(document: mapDoc, isReceivable: true),
+      ),
     );
   }
 }
