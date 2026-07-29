@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_account_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'category_settings_page.dart';
 
@@ -60,7 +61,6 @@ class SettingsPage extends StatelessWidget {
                       'Gerencie as contas da empresa para o fluxo de caixa.',
                   icon: Icons.account_balance_outlined,
                   onTap: () {
-                    // SUBSTITUÍDO O TODO PELA CHAMADA REAL:
                     DashboardPage.of(context).openTab(
                       WorkspaceTab(
                         id: 'settings_bank_accounts',
@@ -79,7 +79,14 @@ class SettingsPage extends StatelessWidget {
                       'Defina os meios aceitos (PIX, Boleto, Dinheiro...).',
                   icon: Icons.payments_outlined,
                   onTap: () {
-                    // TODO: Implementar tela de Formas de Pagamento
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_payment_methods',
+                        title: 'Formas de Pgto.',
+                        icon: Icons.payments,
+                        content: const PaymentMethodPage(),
+                      ),
+                    );
                   },
                 ),
                 _buildSettingsCard(

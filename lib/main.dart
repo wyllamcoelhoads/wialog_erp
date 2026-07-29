@@ -6,6 +6,7 @@ import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/document/document_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'dart:io' show Platform;
 
@@ -50,6 +51,9 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<DocumentBloc>(create: (context) => sl<DocumentBloc>()),
         BlocProvider<BankAccountBloc>(
           create: (context) => sl<BankAccountBloc>(),
+        ),
+        BlocProvider<PaymentMethodBloc>(
+          create: (context) => sl<PaymentMethodBloc>(),
         ),
       ],
       child: MaterialApp(
