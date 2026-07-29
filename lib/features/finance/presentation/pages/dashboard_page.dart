@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/pages/login_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings_page.dart';
 
 // Classe auxiliar para gerenciar as abas abertas
 class WorkspaceTab {
@@ -163,6 +164,19 @@ class DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ),
+                // NOVO ITEM: O Botão de Configurações na Barra Esquerda
+                _buildSidebarItem(
+                  icon: Icons.settings,
+                  title: 'Configurações',
+                  onTap: () => openTab(
+                    WorkspaceTab(
+                      id: 'settings',
+                      title: 'Configurações',
+                      icon: Icons.settings,
+                      content: const SettingsPage(),
+                    ),
+                  ),
+                ),
 
                 const Spacer(),
                 ListTile(
@@ -172,9 +186,8 @@ class DashboardPageState extends State<DashboardPage> {
                     style: TextStyle(color: Colors.white70),
                   ),
                   onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
+                    // NOVO: Voltar para a rota raiz de forma segura
+                    Navigator.of(context).pushReplacementNamed('/');
                   },
                 ),
                 const SizedBox(height: 20),

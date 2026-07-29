@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+
+import '../../domain/entities/category_entity.dart';
+import '../bloc/category/category_bloc.dart';
+import '../bloc/category/category_event.dart';
+import '../bloc/category/category_state.dart';
 
 class DocumentFormPage extends StatefulWidget {
   final Map<String, dynamic>? document;
 
-  // NOVO: Essa flag define se a tela é de Receita ou de Despesa.
-  // Colocamos o padrão false para não quebrar a tela de Contas a Pagar que já existe!
+  // Essa flag define se a tela é de Receita ou de Despesa.
+  // Colocamos o padrão false para não quebrar a tela de Contas a Pagar que já existe.
   final bool isReceivable;
 
   const DocumentFormPage({super.key, this.document, this.isReceivable = false});
@@ -24,18 +30,24 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   late TextEditingController _supplierController;
   late TextEditingController _notesController;
 
-  late String
-  _selectedCategory; // NOVO: late para iniciarmos de acordo com o tipo
+  // NOVO: Em vez de String 'nome da categoria', agora guardamos o ID real do banco!
+  int? _selectedCategoryId;
 
   @override
   void initState() {
     super.initState();
     final doc = widget.document;
 
-    // Inicia a categoria padrão baseada no tipo de documento
-    _selectedCategory = widget.isReceivable
-        ? 'Frete Lotação'
-        : 'Despesa Operacional';
+    // Avisa o BLoC para ir no banco buscar as categorias certas para esta aba
+    final categoryType = widget.isReceivable
+        ? CategoryType.receivable
+        : CategoryType.payable;
+    context.read<CategoryBloc>().add(LoadCategories(type: categoryType));
+
+    // Se estiver editando, tenta pegar o ID que veio do banco
+    if (doc != null && doc['categoryId'] != null) {
+      _selectedCategoryId = doc['categoryId'] as int;
+    }
 
     _descriptionController = TextEditingController(
       text: doc?['description'] ?? '',
@@ -91,7 +103,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
               icon: const Icon(Icons.delete_outline, color: AppColors.error),
               tooltip: 'Excluir',
               onPressed: () {
-                // TODO: Lógica de exclusão
+                // TODO: Lógica de exclusão futura
               },
             ),
           const SizedBox(width: 16),
@@ -107,7 +119,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Descomentamos a função e usamos ela aqui!
                   _buildSectionTitle('Informações Principais'),
                   Card(
                     color: Colors.white,
@@ -130,41 +141,57 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: _selectedCategory,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Categoria',
-                                    prefixIcon: Icon(Icons.category_outlined),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  // LISTA DINÂMICA DE CATEGORIAS
-                                  items:
-                                      (widget.isReceivable
-                                              ? [
-                                                  'Frete Lotação',
-                                                  'Frete Fracionado',
-                                                  'Contrato Mensal',
-                                                  'Outras Receitas',
-                                                ]
-                                              : [
-                                                  'Despesa Operacional',
-                                                  'Impostos',
-                                                  'Folha de Pagamento',
-                                                  'Manutenção da Frota',
-                                                ])
-                                          .map(
-                                            (cat) => DropdownMenuItem(
-                                              value: cat,
-                                              child: Text(cat),
-                                            ),
-                                          )
-                                          .toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _selectedCategory = value;
-                                      });
+                                child: BlocBuilder<CategoryBloc, CategoryState>(
+                                  builder: (context, state) {
+                                    if (state is CategoryLoading) {
+                                      return const Center(
+                                        child: CircularProgressIndicator(),
+                                      );
                                     }
+
+                                    if (state is CategoryLoaded) {
+                                      // PROTEÇÃO: Garante que o ID selecionado existe na lista atual
+                                      final bool categoryExists = state
+                                          .categories
+                                          .any(
+                                            (cat) =>
+                                                cat.id == _selectedCategoryId,
+                                          );
+                                      final int? safeValue = categoryExists
+                                          ? _selectedCategoryId
+                                          : null;
+
+                                      return DropdownButtonFormField<int>(
+                                        initialValue: safeValue,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Categoria',
+                                          prefixIcon: Icon(
+                                            Icons.category_outlined,
+                                          ),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: state.categories.map((cat) {
+                                          return DropdownMenuItem<int>(
+                                            value: cat.id,
+                                            child: Text(cat.name),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() {
+                                              _selectedCategoryId = value;
+                                            });
+                                          }
+                                        },
+                                        validator: (value) => value == null
+                                            ? 'Selecione uma categoria'
+                                            : null,
+                                      );
+                                    }
+
+                                    return const Text(
+                                      'Erro ao carregar categorias',
+                                    );
                                   },
                                 ),
                               ),
@@ -188,7 +215,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                   ),
 
                   const SizedBox(height: 24),
-                  // NOVO: Mais uma seção usando a função que estava sobrando!
+
                   _buildSectionTitle('Observações Adicionais'),
                   Card(
                     color: Colors.white,
@@ -212,12 +239,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                   ),
 
                   const SizedBox(height: 32),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       OutlinedButton(
                         onPressed: () {
-                          // NOVO: Fecha a aba atual
+                          // Fecha a aba atual
                           try {
                             DashboardPage.of(context).closeCurrentTab();
                           } catch (_) {
@@ -238,7 +266,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       FilledButton.icon(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            // TODO: Salvar no BLoC / Banco de Dados
+                            // TODO: Lógica futura de salvar Documento/Transação no BLoC
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Documento salvo com sucesso!'),
@@ -246,7 +274,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                               ),
                             );
 
-                            // NOVO: Fecha a aba ao salvar
+                            // Fecha a aba ao salvar
                             try {
                               DashboardPage.of(context).closeCurrentTab();
                             } catch (_) {

@@ -1,6 +1,7 @@
-import 'package:wialog_erp/features/finance/data/datasources/category_datasource.dart';
-import 'package:wialog_erp/features/finance/domain/entities/category_entity.dart';
-import 'package:wialog_erp/features/finance/domain/repositories/category_repository.dart';
+import '../../domain/entities/category_entity.dart';
+import '../../domain/repositories/category_repository.dart';
+import '../datasources/category_datasource.dart';
+import '../models/category_model.dart';
 
 class CategoryRepositoryImpl implements CategoryRepository {
   final CategoryDataSource dataSource;
@@ -8,9 +9,24 @@ class CategoryRepositoryImpl implements CategoryRepository {
   CategoryRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<CategoryEntity>> getCategories() async {
-    // Como CategoryModel estende CategoryEntity, podemos retornar a lista diretamente.
-    // Isso é o poder do polimorfismo na Clean Architecture.
-    return await dataSource.getCategories();
+  Future<List<CategoryEntity>> getCategories({CategoryType? type}) async {
+    return await dataSource.getCategories(type: type);
+  }
+
+  @override
+  Future<CategoryEntity> createCategory(CategoryEntity category) async {
+    final model = CategoryModel.fromEntity(category);
+    return await dataSource.createCategory(model);
+  }
+
+  @override
+  Future<CategoryEntity> updateCategory(CategoryEntity category) async {
+    final model = CategoryModel.fromEntity(category);
+    return await dataSource.updateCategory(model);
+  }
+
+  @override
+  Future<void> deleteCategory(int id) async {
+    await dataSource.deleteCategory(id);
   }
 }
