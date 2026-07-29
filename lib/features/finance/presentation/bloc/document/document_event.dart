@@ -10,9 +10,13 @@ abstract class DocumentEvent extends Equatable {
 class LoadDocuments extends DocumentEvent {
   final DocumentType? type;
   final String? query;
-  const LoadDocuments({this.type, this.query});
+  final DateTime? startDate; // NOVO: Filtro de data inicial
+  final DateTime? endDate; // NOVO: Filtro de data final
+
+  const LoadDocuments({this.type, this.query, this.startDate, this.endDate});
+
   @override
-  List<Object?> get props => [type, query];
+  List<Object?> get props => [type, query, startDate, endDate];
 }
 
 class AddDocument extends DocumentEvent {
@@ -36,3 +40,6 @@ class DeleteDocument extends DocumentEvent {
   @override
   List<Object?> get props => [id, type];
 }
+
+// NOVO EVENTO: Usado para limpar a tabela ao trocar de aba
+class ClearDocuments extends DocumentEvent {}

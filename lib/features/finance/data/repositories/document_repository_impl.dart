@@ -1,7 +1,6 @@
-import 'package:wialog_erp/features/finance/data/datasources/document_data_source.dart';
-
 import '../../domain/entities/financial_document_entity.dart';
 import '../../domain/repositories/document_repository.dart';
+import '../datasources/document_datasource.dart';
 import '../models/document_model.dart';
 
 class DocumentRepositoryImpl implements DocumentRepository {
@@ -12,8 +11,15 @@ class DocumentRepositoryImpl implements DocumentRepository {
   Future<List<FinancialDocumentEntity>> getDocuments({
     DocumentType? type,
     String? query,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
-    return await dataSource.getDocuments(type: type, query: query);
+    return await dataSource.getDocuments(
+      type: type,
+      query: query,
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 
   @override

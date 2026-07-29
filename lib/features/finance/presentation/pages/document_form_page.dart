@@ -41,21 +41,22 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   late TextEditingController _descriptionController;
   late TextEditingController _valueController;
   late TextEditingController _notesController;
-
-  // Controladores para Parcelas e ID Base
   late TextEditingController _installmentsController;
   late String _documentId;
 
   DateTime? _selectedDueDate;
   int? _selectedCategoryId;
   String? _selectedPartnerId;
+  String _installmentInterval = 'Mensal'; // Padrão
+
+  // NOVO: Lista temporária para a Subgrid (Preview)
+  List<FinancialDocumentEntity> _previewInstallments = [];
 
   @override
   void initState() {
     super.initState();
     final doc = widget.document;
 
-    // 1. Carrega as Categorias e Parceiros baseados no Tipo (Receita/Despesa)
     final categoryType = widget.isReceivable
         ? CategoryType.receivable
         : CategoryType.payable;
@@ -66,19 +67,14 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     context.read<CategoryBloc>().add(LoadCategories(type: categoryType));
     context.read<PartnerBloc>().add(LoadPartners(type: partnerType));
 
-    // 2. Define o ID do documento ao abrir a tela
     _documentId = _isEditing
         ? doc!['id'].toString()
         : (100000 + Random().nextInt(899999)).toString();
-    _installmentsController = TextEditingController(
-      text: '1',
-    ); // Padrão: 1 parcela
+    _installmentsController = TextEditingController(text: '1');
 
-    // 3. Preenche os dados se for Edição
     if (_isEditing && doc != null) {
       _selectedCategoryId = doc['category_id'] as int?;
       _selectedPartnerId = doc['partner_id'] as String?;
-
       if (doc['due_date'] != null) {
         _selectedDueDate = DateTime.parse(doc['due_date'].toString());
       }
@@ -102,24 +98,137 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     super.dispose();
   }
 
+  // Helper de Datas para resolver o bug do dia 31 (Ex: 31/08 -> 30/09 e não 01/10)
+  DateTime _addMonthsFixed(DateTime date, int monthsToAdd) {
+    int newYear = date.year;
+    int newMonth = date.month + monthsToAdd;
+
+    while (newMonth > 12) {
+      newYear++;
+      newMonth -= 12;
+    }
+
+    // Descobre qual é o último dia do novo mês gerado
+    int lastDayOfNewMonth = DateTime(newYear, newMonth + 1, 0).day;
+
+    // Se o dia original for maior que o último dia do mês alvo, trava no último dia
+    int newDay = date.day > lastDayOfNewMonth ? lastDayOfNewMonth : date.day;
+
+    return DateTime(newYear, newMonth, newDay);
+  }
+
+  // Gera o Preview das parcelas
+  void _generatePreview() {
+    if (!_formKey.currentState!.validate() ||
+        _selectedDueDate == null ||
+        _selectedCategoryId == null ||
+        _selectedPartnerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Preencha as Informações Principais antes de gerar parcelas.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final double valorTotal =
+        double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0;
+    int parcelas = int.tryParse(_installmentsController.text) ?? 1;
+    if (parcelas <= 0) parcelas = 1;
+
+    final double valorParcela = valorTotal / parcelas;
+    List<FinancialDocumentEntity> geradas = [];
+
+    for (int i = 1; i <= parcelas; i++) {
+      String docId = parcelas == 1 ? _documentId : '$_documentId-$i';
+      DateTime dueDateParcela;
+
+      // Cálculo de intervalo inteligente
+      if (_installmentInterval == 'Mensal') {
+        dueDateParcela = _addMonthsFixed(_selectedDueDate!, i - 1);
+      } else if (_installmentInterval == 'Quinzenal') {
+        dueDateParcela = _selectedDueDate!.add(Duration(days: 15 * (i - 1)));
+      } else if (_installmentInterval == 'Semanal') {
+        dueDateParcela = _selectedDueDate!.add(Duration(days: 7 * (i - 1)));
+      } else {
+        // Diário
+        dueDateParcela = _selectedDueDate!.add(Duration(days: i - 1));
+      }
+
+      String descricaoParcela = parcelas == 1
+          ? _descriptionController.text
+          : '${_descriptionController.text} (Parc $i/$parcelas)';
+
+      geradas.add(
+        FinancialDocumentEntity(
+          id: docId,
+          description: descricaoParcela,
+          type: widget.isReceivable
+              ? DocumentType.receivable
+              : DocumentType.payable,
+          value: double.parse(valorParcela.toStringAsFixed(2)),
+          balance: double.parse(valorParcela.toStringAsFixed(2)),
+          issueDate: DateTime.now(),
+          dueDate: dueDateParcela,
+          categoryId: _selectedCategoryId!,
+          partnerId: _selectedPartnerId!,
+          status: DocumentStatus.pending,
+        ),
+      );
+    }
+
+    setState(() {
+      _previewInstallments = geradas;
+    });
+  }
+
+  // Altera a data de uma parcela específica na grid
+  Future<void> _editPreviewDate(int index) async {
+    final current = _previewInstallments[index].dueDate;
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != current) {
+      setState(() {
+        // Recria a entidade com a nova data
+        final old = _previewInstallments[index];
+        _previewInstallments[index] = FinancialDocumentEntity(
+          id: old.id,
+          description: old.description,
+          type: old.type,
+          value: old.value,
+          balance: old.balance,
+          issueDate: old.issueDate,
+          dueDate: picked,
+          categoryId: old.categoryId,
+          partnerId: old.partnerId,
+          status: old.status,
+        );
+      });
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDueDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textTitle,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null && picked != _selectedDueDate) {
       setState(() {
@@ -150,25 +259,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
-              tooltip: 'Excluir Documento',
-              onPressed: () {
-                context.read<DocumentBloc>().add(
-                  DeleteDocument(
-                    widget.document!['id'],
-                    widget.isReceivable
-                        ? DocumentType.receivable
-                        : DocumentType.payable,
-                  ),
-                );
-                _closeTab(context);
-              },
-            ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: BlocListener<DocumentBloc, DocumentState>(
         listener: (context, state) {
@@ -184,7 +274,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
             setState(() => _isSaving = false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Documento salvo com sucesso!'),
+                content: Text('Documentos salvos com sucesso!'),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -201,6 +291,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // INFORMAÇÕES PRINCIPAIS (Inalteradas visualmente, cortado para brevidade mas você mantém seu Card atual)
                     _buildSectionTitle('Informações Principais'),
                     Card(
                       color: Colors.white,
@@ -217,16 +308,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                               children: [
                                 Expanded(
                                   flex: 1,
-                                  child: TextFormField(
-                                    initialValue: _documentId,
-                                    readOnly: true,
-                                    decoration: InputDecoration(
-                                      labelText: 'Nº Documento',
-                                      prefixIcon: const Icon(Icons.tag),
-                                      border: const OutlineInputBorder(),
-                                      filled: true,
-                                      fillColor: Colors.grey.shade100,
+                                  child: _buildTextField(
+                                    controller: TextEditingController(
+                                      text: _documentId,
                                     ),
+                                    label: 'Nº Documento',
+                                    icon: Icons.tag,
+                                    readOnly: true,
                                   ),
                                 ),
                                 const SizedBox(width: 24),
@@ -255,27 +343,17 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                             const SizedBox(height: 24),
                             Row(
                               children: [
-                                // SELETOR DE CATEGORIA (BLOC)
                                 Expanded(
                                   child: BlocBuilder<CategoryBloc, CategoryState>(
                                     builder: (context, state) {
-                                      if (state is CategoryLoading) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-
                                       if (state is CategoryLoaded) {
-                                        // Trava de segurança contra o erro da tela vermelha
-                                        final bool categoryExists = state
-                                            .categories
+                                        final bool exists = state.categories
                                             .any(
                                               (c) =>
                                                   c.id == _selectedCategoryId,
                                             );
-
                                         return DropdownButtonFormField<int>(
-                                          initialValue: categoryExists
+                                          initialValue: exists
                                               ? _selectedCategoryId
                                               : null,
                                           decoration: const InputDecoration(
@@ -285,82 +363,74 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                             ),
                                             border: OutlineInputBorder(),
                                           ),
-                                          items: state.categories.map((cat) {
-                                            return DropdownMenuItem<int>(
-                                              value: cat.id,
-                                              child: Text(cat.name),
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) => setState(
-                                            () => _selectedCategoryId = value,
+                                          items: state.categories
+                                              .map(
+                                                (cat) => DropdownMenuItem(
+                                                  value: cat.id,
+                                                  child: Text(cat.name),
+                                                ),
+                                              )
+                                              .toList(),
+                                          onChanged: (val) => setState(
+                                            () => _selectedCategoryId = val,
                                           ),
-                                          validator: (value) => value == null
+                                          validator: (val) => val == null
                                               ? 'Obrigatório'
                                               : null,
                                         );
                                       }
-                                      return const Text('Erro ao carregar');
+                                      return const CircularProgressIndicator();
                                     },
                                   ),
                                 ),
                                 const SizedBox(width: 24),
-                                // SELETOR DE PARCEIRO (BLOC)
                                 Expanded(
                                   child: BlocBuilder<PartnerBloc, PartnerState>(
                                     builder: (context, state) {
-                                      if (state is PartnerLoading) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
-                                        );
-                                      }
-
                                       if (state is PartnerLoaded) {
-                                        // Trava de segurança contra o erro da tela vermelha
-                                        final bool partnerExists = state
-                                            .partners
-                                            .any(
-                                              (p) => p.id == _selectedPartnerId,
-                                            );
-
+                                        final bool exists = state.partners.any(
+                                          (p) => p.id == _selectedPartnerId,
+                                        );
                                         return DropdownButtonFormField<String>(
-                                          initialValue: partnerExists
+                                          initialValue: exists
                                               ? _selectedPartnerId
                                               : null,
                                           decoration: InputDecoration(
                                             labelText: widget.isReceivable
-                                                ? 'Cliente / Remetente'
-                                                : 'Fornecedor / Favorecido',
+                                                ? 'Cliente'
+                                                : 'Fornecedor',
                                             prefixIcon: const Icon(
-                                              Icons.business_outlined,
+                                              Icons.business,
                                             ),
                                             border: const OutlineInputBorder(),
                                           ),
-                                          items: state.partners.map((partner) {
-                                            return DropdownMenuItem<String>(
-                                              value: partner.id,
-                                              child: Text(partner.name),
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) => setState(
-                                            () => _selectedPartnerId = value,
+                                          items: state.partners
+                                              .map(
+                                                (p) => DropdownMenuItem(
+                                                  value: p.id,
+                                                  child: Text(p.name),
+                                                ),
+                                              )
+                                              .toList(),
+                                          onChanged: (val) => setState(
+                                            () => _selectedPartnerId = val,
                                           ),
-                                          validator: (value) => value == null
+                                          validator: (val) => val == null
                                               ? 'Obrigatório'
                                               : null,
                                         );
                                       }
-                                      return const Text('Erro ao carregar');
+                                      return const CircularProgressIndicator();
                                     },
                                   ),
                                 ),
                                 const SizedBox(width: 24),
-                                // SELETOR DE DATA
                                 Expanded(
                                   child: InkWell(
                                     onTap: () => _selectDate(context),
                                     child: InputDecorator(
                                       decoration: InputDecoration(
-                                        labelText: 'Data de Vencimento',
+                                        labelText: 'Data Base / 1º Venc.',
                                         prefixIcon: const Icon(
                                           Icons.calendar_today,
                                         ),
@@ -371,7 +441,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                       ),
                                       child: Text(
                                         _selectedDueDate == null
-                                            ? 'Selecionar data'
+                                            ? 'Selecionar'
                                             : '${_selectedDueDate!.day.toString().padLeft(2, '0')}/${_selectedDueDate!.month.toString().padLeft(2, '0')}/${_selectedDueDate!.year}',
                                       ),
                                     ),
@@ -385,70 +455,203 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // SEÇÃO DE PARCELAMENTO E OBSERVAÇÕES
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSectionTitle('Parcelamento'),
-                              Card(
-                                color: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade200),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: _buildTextField(
-                                    controller: _installmentsController,
-                                    label: 'Nº de Parcelas',
-                                    icon: Icons.layers_outlined,
-                                    isNumeric: true,
-                                    readOnly:
-                                        _isEditing, // Só parcela novos cadastros
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                    // SEÇÃO DE PARCELAMENTO (SUBGRID)
+                    if (!_isEditing) ...[
+                      _buildSectionTitle('Geração de Parcelas'),
+                      Card(
+                        color: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey.shade200),
                         ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _buildSectionTitle('Observações Adicionais'),
-                              Card(
-                                color: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade200),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: TextFormField(
-                                    controller: _notesController,
-                                    maxLines: 1,
-                                    decoration: const InputDecoration(
-                                      hintText:
-                                          'Detalhes ou centro de custo...',
-                                      border: OutlineInputBorder(),
-                                      prefixIcon: Icon(Icons.notes),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildTextField(
+                                      controller: _installmentsController,
+                                      label: 'Qtd. Parcelas',
+                                      icon: Icons.layers_outlined,
+                                      isNumeric: true,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(width: 24),
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      initialValue: _installmentInterval,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Intervalo',
+                                        prefixIcon: Icon(Icons.update),
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      items:
+                                          [
+                                                'Diário',
+                                                'Semanal',
+                                                'Quinzenal',
+                                                'Mensal',
+                                              ]
+                                              .map(
+                                                (s) => DropdownMenuItem(
+                                                  value: s,
+                                                  child: Text(s),
+                                                ),
+                                              )
+                                              .toList(),
+                                      onChanged: (val) => setState(
+                                        () => _installmentInterval = val!,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 24),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 55,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _generatePreview,
+                                        icon: const Icon(
+                                          Icons.auto_awesome,
+                                          color: Colors.white,
+                                        ),
+                                        label: const Text(
+                                          'Gerar Previsão',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.info,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+
+                              if (_previewInstallments.isNotEmpty) ...[
+                                const SizedBox(height: 24),
+                                const Divider(),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Confirme ou altere as datas antes de salvar:',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: DataTable(
+                                    headingRowColor: WidgetStateProperty.all(
+                                      AppColors.background,
+                                    ),
+                                    columns: const [
+                                      DataColumn(label: Text('Documento')),
+                                      DataColumn(label: Text('Descrição')),
+                                      DataColumn(
+                                        label: Text('Valor Total (R\$)'),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Vencimento (Clique p/ Editar)',
+                                        ),
+                                      ),
+                                    ],
+                                    rows: _previewInstallments.asMap().entries.map((
+                                      entry,
+                                    ) {
+                                      final index = entry.key;
+                                      final parc = entry.value;
+                                      final dateStr =
+                                          '${parc.dueDate.day.toString().padLeft(2, '0')}/${parc.dueDate.month.toString().padLeft(2, '0')}/${parc.dueDate.year}';
+
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(
+                                            Text(
+                                              parc.id,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(Text(parc.description)),
+                                          DataCell(
+                                            Text(
+                                              'R\$ ${parc.value.toStringAsFixed(2)}',
+                                            ),
+                                          ),
+                                          DataCell(
+                                            InkWell(
+                                              onTap: () =>
+                                                  _editPreviewDate(index),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    dateStr,
+                                                    style: const TextStyle(
+                                                      color: AppColors.primary,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Icon(
+                                                    Icons.edit_calendar,
+                                                    size: 16,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    _buildSectionTitle('Observações Adicionais'),
+                    Card(
+                      color: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: TextFormField(
+                          controller: _notesController,
+                          maxLines: 2,
+                          decoration: const InputDecoration(
+                            hintText: 'Detalhes...',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -457,29 +660,16 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       children: [
                         OutlinedButton(
                           onPressed: () => _closeTab(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
-                          ),
                           child: const Text('Cancelar'),
                         ),
                         const SizedBox(width: 16),
                         FilledButton.icon(
                           onPressed: _isSaving ? null : _handleSave,
                           icon: _isSaving
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Icon(_isEditing ? Icons.save_as : Icons.save),
+                              ? const CircularProgressIndicator()
+                              : const Icon(Icons.save),
                           label: Text(
-                            _isSaving ? 'Salvando...' : 'Salvar Documento',
+                            _isSaving ? 'Salvando...' : 'Salvar Documento(s)',
                           ),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
@@ -504,7 +694,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     );
   }
 
-  // AQUI ESTÁ A LÓGICA DE SALVAR QUE ESTAVA QUEBRADA/PERDIDA!
   void _handleSave() {
     if (!_formKey.currentState!.validate() ||
         _selectedDueDate == null ||
@@ -512,7 +701,20 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         _selectedPartnerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Preencha todos os campos obrigatórios.'),
+          content: Text('Preencha os campos obrigatórios.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    // Trava de segurança: Se for cadastro novo, obriga a gerar a preview antes de salvar
+    if (!_isEditing && _previewInstallments.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Por favor, clique em "Gerar Previsão" antes de salvar.',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
@@ -521,14 +723,10 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
 
     setState(() => _isSaving = true);
 
-    // Formata os dados de valor e parcelas
-    final double valorTotal =
-        double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0;
-    int parcelas = int.tryParse(_installmentsController.text) ?? 1;
-    if (parcelas <= 0) parcelas = 1;
-
     if (_isEditing) {
-      // MODO EDIÇÃO (Não mexe no parcelamento, só atualiza o documento único)
+      // MODO EDIÇÃO
+      final valorTotal =
+          double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0;
       final document = FinancialDocumentEntity(
         id: _documentId,
         description: _descriptionController.text,
@@ -548,42 +746,23 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       );
       context.read<DocumentBloc>().add(UpdateDocument(document));
     } else {
-      // MODO CRIAÇÃO (Faz o loop para criar múltiplas parcelas se necessário)
-      final double valorParcela = valorTotal / parcelas;
-
-      for (int i = 1; i <= parcelas; i++) {
-        // Se for 1 parcela, usa o ID normal. Se for mais, adiciona o traço (ex: 12001-1, 12001-2)
-        String docId = parcelas == 1 ? _documentId : '$_documentId-$i';
-
-        // Joga o vencimento 1 mês para frente a cada parcela (aproximação simples de 30 dias)
-        DateTime dueDateParcela = DateTime(
-          _selectedDueDate!.year,
-          _selectedDueDate!.month + (i - 1),
-          _selectedDueDate!.day,
+      // MODO CRIAÇÃO (Salva todas as parcelas geradas na Preview)
+      for (var doc in _previewInstallments) {
+        // Injeta a observação atualizada em todas as parcelas antes de disparar
+        final docToSave = FinancialDocumentEntity(
+          id: doc.id,
+          description: doc.description,
+          type: doc.type,
+          value: doc.value,
+          balance: doc.balance,
+          issueDate: doc.issueDate,
+          dueDate: doc.dueDate,
+          categoryId: doc.categoryId,
+          partnerId: doc.partnerId,
+          status: doc.status,
+          notes: _notesController.text, // Atualiza a obs
         );
-
-        // Ajusta a descrição para indicar a parcela se houver mais de uma
-        String descricaoParcela = parcelas == 1
-            ? _descriptionController.text
-            : '${_descriptionController.text} (Parc $i/$parcelas)';
-
-        final document = FinancialDocumentEntity(
-          id: docId,
-          description: descricaoParcela,
-          type: widget.isReceivable
-              ? DocumentType.receivable
-              : DocumentType.payable,
-          value: double.parse(valorParcela.toStringAsFixed(2)),
-          balance: double.parse(valorParcela.toStringAsFixed(2)),
-          issueDate: DateTime.now(),
-          dueDate: dueDateParcela,
-          categoryId: _selectedCategoryId!,
-          partnerId: _selectedPartnerId!,
-          status: DocumentStatus.pending,
-          notes: _notesController.text,
-        );
-
-        context.read<DocumentBloc>().add(AddDocument(document));
+        context.read<DocumentBloc>().add(AddDocument(docToSave));
       }
     }
   }
