@@ -41,7 +41,13 @@ class CategoryPostgresDataSource implements CategoryDataSource {
       VALUES (@name, @type, @is_active)
       RETURNING *;
     ''';
-    final result = await dbConnection.query(sql, category.toMap());
+
+    // CORREÇÃO: Pegamos os parâmetros e removemos o 'id',
+    // pois quem gera o ID de uma nova categoria é o banco de dados (Auto-Incremento).
+    final params = category.toMap();
+    params.remove('id');
+
+    final result = await dbConnection.query(sql, params);
     return CategoryModel.fromMap(result.first.toColumnMap());
   }
 
