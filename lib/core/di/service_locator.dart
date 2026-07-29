@@ -1,4 +1,8 @@
 import 'package:get_it/get_it.dart';
+import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
+import 'package:wialog_erp/features/finance/data/repositories/bank_account_repository_impl.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/bank_account_repository.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import '../database/database_connection.dart';
 
 // Imports de Parceiros
@@ -57,4 +61,16 @@ Future<void> initDependencies() async {
     () => DocumentRepositoryImpl(sl()),
   );
   sl.registerFactory<DocumentBloc>(() => DocumentBloc(sl()));
+
+  // ==========================================
+  // 5. FEATURES: CONTAS BANCÁRIAS
+  // ==========================================
+  // Dentro da função initDependencies:
+  sl.registerLazySingleton<BankAccountDataSource>(
+    () => BankAccountPostgresDataSource(sl()),
+  );
+  sl.registerLazySingleton<BankAccountRepository>(
+    () => BankAccountRepositoryImpl(sl()),
+  );
+  sl.registerFactory<BankAccountBloc>(() => BankAccountBloc(sl()));
 }

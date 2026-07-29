@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Usaremos o package base do flutter para Windows para definir o tamanho
 import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/document/document_bloc.dart';
@@ -47,6 +48,9 @@ class WiaLogApp extends StatelessWidget {
           create: (context) => CategoryBloc(sl())..add(LoadCategories()),
         ), // ADD THIS!
         BlocProvider<DocumentBloc>(create: (context) => sl<DocumentBloc>()),
+        BlocProvider<BankAccountBloc>(
+          create: (context) => sl<BankAccountBloc>(),
+        ),
       ],
       child: MaterialApp(
         title: 'WiaLog ERP',
