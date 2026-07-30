@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_account_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'category_settings_page.dart';
 
@@ -37,8 +39,8 @@ class SettingsPage extends StatelessWidget {
               children: [
                 _buildSettingsCard(
                   context,
-                  title: 'Categorias de Fornecedores',
-                  subtitle: 'Criar, editar e inativar categorias.',
+                  title: 'Categorias (Financeiro)',
+                  subtitle: 'Criar, editar e inativar categorias de contas.',
                   icon: Icons.category_outlined,
                   onTap: () {
                     DashboardPage.of(context).openTab(
@@ -47,6 +49,42 @@ class SettingsPage extends StatelessWidget {
                         title: 'Categorias',
                         icon: Icons.category,
                         content: const CategorySettingsPage(),
+                      ),
+                    );
+                  },
+                ),
+                // NOVO CARTÃO: CONTAS BANCÁRIAS
+                _buildSettingsCard(
+                  context,
+                  title: 'Contas Bancárias e Caixas',
+                  subtitle:
+                      'Gerencie as contas da empresa para o fluxo de caixa.',
+                  icon: Icons.account_balance_outlined,
+                  onTap: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_bank_accounts',
+                        title: 'Contas Bancárias',
+                        icon: Icons.account_balance,
+                        content: const BankAccountPage(),
+                      ),
+                    );
+                  },
+                ),
+                // NOVO CARTÃO: FORMAS DE PAGAMENTO
+                _buildSettingsCard(
+                  context,
+                  title: 'Formas de Pagamento',
+                  subtitle:
+                      'Defina os meios aceitos (PIX, Boleto, Dinheiro...).',
+                  icon: Icons.payments_outlined,
+                  onTap: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_payment_methods',
+                        title: 'Formas de Pgto.',
+                        icon: Icons.payments,
+                        content: const PaymentMethodPage(),
                       ),
                     );
                   },
@@ -76,15 +114,6 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.lock_outline,
                   onTap: () {
                     // TODO: Implementar troca de senha
-                  },
-                ),
-                _buildSettingsCard(
-                  context,
-                  title: 'Preferências Gerais',
-                  subtitle: 'Licenciamento e dados da empresa.',
-                  icon: Icons.business_center_outlined,
-                  onTap: () {
-                    // TODO: Implementar dados da empresa
                   },
                 ),
               ],

@@ -1,4 +1,12 @@
 import 'package:get_it/get_it.dart';
+import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
+import 'package:wialog_erp/features/finance/data/datasources/payment_method_data_source.dart';
+import 'package:wialog_erp/features/finance/data/repositories/bank_account_repository_impl.dart';
+import 'package:wialog_erp/features/finance/data/repositories/payment_method_repository_impl.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/bank_account_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/payment_method_repository.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import '../database/database_connection.dart';
 
 // Imports de Parceiros
@@ -57,4 +65,25 @@ Future<void> initDependencies() async {
     () => DocumentRepositoryImpl(sl()),
   );
   sl.registerFactory<DocumentBloc>(() => DocumentBloc(sl()));
+
+  // ==========================================
+  // 5. FEATURES: CONTAS BANCÁRIAS
+  // ==========================================
+  // Dentro da função initDependencies:
+  sl.registerLazySingleton<BankAccountDataSource>(
+    () => BankAccountPostgresDataSource(sl()),
+  );
+  sl.registerLazySingleton<BankAccountRepository>(
+    () => BankAccountRepositoryImpl(sl()),
+  );
+  sl.registerFactory<BankAccountBloc>(() => BankAccountBloc(sl()));
+
+  // NOVO: FEATURES: FORMAS DE PAGAMENTO
+  sl.registerLazySingleton<PaymentMethodDataSource>(
+    () => PaymentMethodPostgresDataSource(sl()),
+  );
+  sl.registerLazySingleton<PaymentMethodRepository>(
+    () => PaymentMethodRepositoryImpl(sl()),
+  );
+  sl.registerFactory<PaymentMethodBloc>(() => PaymentMethodBloc(sl()));
 }
