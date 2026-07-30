@@ -38,7 +38,7 @@ class PartnerPostgresDataSource implements PartnerDataSource {
 
     String sql = 'SELECT * FROM partners';
     if (whereClauses.isNotEmpty) {
-      sql += ' WHERE ' + whereClauses.join(' AND ');
+      sql += ' WHERE ${whereClauses.join(' AND ')}';
     }
     sql += ' ORDER BY created_at DESC';
 

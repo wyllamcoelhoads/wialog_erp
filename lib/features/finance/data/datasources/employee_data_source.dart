@@ -58,7 +58,9 @@ class EmployeePostgresDataSource implements EmployeeDataSource {
       WHERE id = @id
       RETURNING *;
     ''';
-    final result = await dbConnection.query(sql, employee.toMap());
+
+    final params = employee.toMap();
+    final result = await dbConnection.query(sql, params);
     return EmployeeModel.fromMap(result.first.toColumnMap());
   }
 

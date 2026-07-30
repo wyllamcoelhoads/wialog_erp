@@ -50,7 +50,11 @@ class UserPostgresDataSource implements UserDataSource {
       WHERE id = @id
       RETURNING *;
     ''';
-    final result = await dbConnection.query(sql, user.toMap());
+
+    // Pegamos os dados do Model
+    final params = user.toMap();
+    params.remove('employee_id');
+    final result = await dbConnection.query(sql, params);
     return UserModel.fromMap(result.first.toColumnMap());
   }
 
