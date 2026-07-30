@@ -9,7 +9,6 @@ import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dar
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_state.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
-import 'package:wialog_erp/features/role/presentation/bloc/role_event.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_state.dart';
 
 class UserPage extends StatefulWidget {
@@ -23,6 +22,8 @@ class _UserPageState extends State<UserPage> {
   bool _showInactive = false;
   bool _obscurePassword = true;
 
+  // APAGAMOS O Map _roleLabels QUE FICAVA AQUI! ELE NÃO EXISTE MAIS.
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +32,6 @@ class _UserPageState extends State<UserPage> {
     context.read<EmployeeBloc>().add(
       const LoadEmployees(includeInactive: false),
     );
-    context.read<RoleBloc>().add(const LoadRoles(includeInactive: false));
   }
 
   void _showUserDialog({UserEntity? user}) {
@@ -45,6 +45,13 @@ class _UserPageState extends State<UserPage> {
 
     int? selectedRoleId = user?.roleId;
     int? selectedEmployeeId = user?.employeeId;
+
+    // NOVO: Pegamos a lista atual de usuários carregados na tela para usar no filtro
+    final userState = context.read<UserBloc>().state;
+    List<UserEntity> currentUsers = [];
+    if (userState is UserLoaded) {
+      currentUsers = userState.users;
+    }
 
     showDialog(
       context: context,
@@ -65,7 +72,7 @@ class _UserPageState extends State<UserPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // BLOCO 1: Seleção do Funcionário (Mágica do BLoC)
+                        // BLOCO 1: Seleção do Funcionário
                         BlocBuilder<EmployeeBloc, EmployeeState>(
                           builder: (context, empState) {
                             if (empState is EmployeeLoading) {
@@ -74,16 +81,20 @@ class _UserPageState extends State<UserPage> {
                               );
                             }
                             if (empState is EmployeeLoaded) {
-                              // FILTRO: Remove os Motoristas (Eles não logam no sistema)
+                              // FILTRO 1: Remove Motoristas E remove quem já tem login criado!
                               final eligibleEmployees = empState.employees
-                                  .where(
-                                    (e) =>
+                                  .where((e) {
+                                    final isNotDriver =
                                         e.roleName?.toLowerCase() !=
-                                        'motorista',
-                                  )
+                                        'motorista';
+                                    final alreadyHasAccount = currentUsers.any(
+                                      (u) => u.employeeId == e.id,
+                                    );
+                                    return isNotDriver && !alreadyHasAccount;
+                                  })
                                   .toList();
 
-                              // Se estiver editando, não pode trocar de funcionário (apenas mostrar o nome)
+                              // Se estiver editando, não pode trocar de funcionário
                               if (isEditing) {
                                 return TextFormField(
                                   initialValue: user.employeeName,
@@ -91,6 +102,7 @@ class _UserPageState extends State<UserPage> {
                                     labelText: 'Funcionário Vinculado',
                                     border: OutlineInputBorder(),
                                     filled: true,
+                                    fillColor: Color(0xFFF5F5F5),
                                   ),
                                   readOnly: true,
                                 );
@@ -165,10 +177,16 @@ class _UserPageState extends State<UserPage> {
                         // BLOCO 3: Permissão (Role Dinâmico)
                         BlocBuilder<RoleBloc, RoleState>(
                           builder: (context, roleState) {
-                            if (roleState is RoleLoading) {
+                            if (roleState is RoleLoading)
                               return const CircularProgressIndicator();
-                            }
                             if (roleState is RoleLoaded) {
+                              // FILTRO 2: Remove a opção "Motorista" das permissões do sistema
+                              final eligibleRoles = roleState.roles
+                                  .where(
+                                    (r) => r.name.toLowerCase() != 'motorista',
+                                  )
+                                  .toList();
+
                               return DropdownButtonFormField<int>(
                                 isExpanded: true,
                                 initialValue: selectedRoleId,
@@ -177,7 +195,7 @@ class _UserPageState extends State<UserPage> {
                                   prefixIcon: Icon(Icons.security),
                                   border: OutlineInputBorder(),
                                 ),
-                                items: roleState.roles.map((role) {
+                                items: eligibleRoles.map((role) {
                                   return DropdownMenuItem(
                                     value: role.id,
                                     child: Text(role.name),
@@ -210,6 +228,7 @@ class _UserPageState extends State<UserPage> {
                         employeeId: selectedEmployeeId!,
                         email: emailController.text.trim().toLowerCase(),
                         password: passwordController.text,
+                        // CORREÇÃO: Agora passamos o ID dinâmico do cargo selecionado!
                         roleId: selectedRoleId!,
                         isActive: user?.isActive ?? true,
                       );
@@ -238,6 +257,7 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _confirmDelete(UserEntity user) {
+    // CORREÇÃO AQUI: Validando pelo nome dinâmico do cargo que vem do banco!
     if (user.roleName?.toLowerCase() == 'administrador' && user.id == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -353,26 +373,23 @@ class _UserPageState extends State<UserPage> {
                 ),
                 child: BlocBuilder<UserBloc, UserState>(
                   builder: (context, state) {
-                    if (state is UserLoading) {
+                    if (state is UserLoading)
                       return const Center(child: CircularProgressIndicator());
-                    }
-                    if (state is UserError) {
+                    if (state is UserError)
                       return Center(
                         child: Text(
                           state.message,
                           style: const TextStyle(color: AppColors.error),
                         ),
                       );
-                    }
                     if (state is UserLoaded) {
-                      if (state.users.isEmpty) {
+                      if (state.users.isEmpty)
                         return const Center(
                           child: Text(
                             'Nenhum usuário encontrado.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         );
-                      }
 
                       return SingleChildScrollView(
                         scrollDirection: Axis.vertical,
@@ -460,9 +477,10 @@ class _UserPageState extends State<UserPage> {
                                       ),
                                     ),
                                   ),
+                                  // CORREÇÃO: Agora usamos a String limpa que já vem do Banco de Dados!
                                   DataCell(
                                     Text(
-                                      user.roleName ?? '',
+                                      user.roleName ?? 'Sem Cargo',
                                       style: TextStyle(
                                         color: user.isActive
                                             ? Colors.black
