@@ -353,6 +353,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                   c.id == _selectedCategoryId,
                                             );
                                         return DropdownButtonFormField<int>(
+                                          isExpanded: true,
                                           initialValue: exists
                                               ? _selectedCategoryId
                                               : null,
@@ -367,7 +368,11 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                               .map(
                                                 (cat) => DropdownMenuItem(
                                                   value: cat.id,
-                                                  child: Text(cat.name),
+                                                  child: Text(
+                                                    cat.name,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                               )
                                               .toList(),
@@ -392,6 +397,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                           (p) => p.id == _selectedPartnerId,
                                         );
                                         return DropdownButtonFormField<String>(
+                                          isExpanded: true,
                                           initialValue: exists
                                               ? _selectedPartnerId
                                               : null,
@@ -408,7 +414,11 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                               .map(
                                                 (p) => DropdownMenuItem(
                                                   value: p.id,
-                                                  child: Text(p.name),
+                                                  child: Text(
+                                                    p.name,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                               )
                                               .toList(),
@@ -443,6 +453,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                         _selectedDueDate == null
                                             ? 'Selecionar'
                                             : '${_selectedDueDate!.day.toString().padLeft(2, '0')}/${_selectedDueDate!.month.toString().padLeft(2, '0')}/${_selectedDueDate!.year}',
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ),
@@ -483,6 +494,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                   const SizedBox(width: 24),
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
                                       initialValue: _installmentInterval,
                                       decoration: const InputDecoration(
                                         labelText: 'Intervalo',
@@ -499,7 +511,11 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                               .map(
                                                 (s) => DropdownMenuItem(
                                                   value: s,
-                                                  child: Text(s),
+                                                  child: Text(
+                                                    s,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                               )
                                               .toList(),
