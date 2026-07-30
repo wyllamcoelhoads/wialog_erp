@@ -1,12 +1,11 @@
-enum UserRole { admin, financial, operational }
-
 class UserEntity {
   final int id;
   final int employeeId;
-  final String? employeeName; // Trazido pelo JOIN para mostrar na tela
+  final String? employeeName;
   final String email;
   final String password;
-  final UserRole role;
+  final int roleId;
+  final String? roleName; // Trazido do banco
   final bool isActive;
 
   UserEntity({
@@ -15,7 +14,8 @@ class UserEntity {
     this.employeeName,
     required this.email,
     required this.password,
-    required this.role,
+    required this.roleId,
+    this.roleName,
     this.isActive = true,
   });
 }

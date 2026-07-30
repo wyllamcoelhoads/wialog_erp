@@ -1,10 +1,9 @@
-enum EmployeeRole { driver, operational, financial, admin }
-
 class EmployeeEntity {
   final int id;
   final String name;
   final String cpf;
-  final EmployeeRole role;
+  final int roleId;
+  final String? roleName; // Trazido do banco por JOIN
   final String? licenseCategory;
   final DateTime? licenseExpiration;
   final bool isActive;
@@ -13,7 +12,8 @@ class EmployeeEntity {
     required this.id,
     required this.name,
     required this.cpf,
-    required this.role,
+    required this.roleId,
+    this.roleName,
     this.licenseCategory,
     this.licenseExpiration,
     this.isActive = true,
