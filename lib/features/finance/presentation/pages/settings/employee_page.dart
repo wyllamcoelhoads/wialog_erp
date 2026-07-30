@@ -6,6 +6,9 @@ import 'package:wialog_erp/features/finance/domain/entities/employee_entity.dart
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_state.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_event.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_state.dart';
 
 class EmployeePage extends StatefulWidget {
   const EmployeePage({super.key});
@@ -17,19 +20,13 @@ class EmployeePage extends StatefulWidget {
 class _EmployeePageState extends State<EmployeePage> {
   bool _showInactive = false;
 
-  final Map<EmployeeRole, String> _roleLabels = {
-    EmployeeRole.driver: 'Motorista',
-    EmployeeRole.operational: 'Operacional',
-    EmployeeRole.financial: 'Financeiro',
-    EmployeeRole.admin: 'Administrador',
-  };
-
   @override
   void initState() {
     super.initState();
     context.read<EmployeeBloc>().add(
       LoadEmployees(includeInactive: _showInactive),
     );
+    context.read<RoleBloc>().add(const LoadRoles(includeInactive: false));
   }
 
   void _showAddEmployeeDialog({EmployeeEntity? employee}) {
@@ -45,7 +42,8 @@ class _EmployeePageState extends State<EmployeePage> {
     final nameController = TextEditingController(text: employee?.name ?? '');
     final cpfController = TextEditingController(text: cpfMask.getMaskedText());
 
-    EmployeeRole selectedRole = employee?.role ?? EmployeeRole.operational;
+    int? selectedRoleId = employee?.roleId;
+    String? selectedRoleName = employee?.roleName;
     String? selectedLicenseCategory = employee?.licenseCategory;
     DateTime? selectedExpiration = employee?.licenseExpiration;
 
@@ -91,32 +89,49 @@ class _EmployeePageState extends State<EmployeePage> {
                               : null,
                         ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<EmployeeRole>(
-                          initialValue: selectedRole,
-                          decoration: const InputDecoration(
-                            labelText: 'Cargo',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: EmployeeRole.values.map((role) {
-                            return DropdownMenuItem(
-                              value: role,
-                              child: Text(_roleLabels[role]!),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            setDialogState(() {
-                              selectedRole = val!;
-                              // Se deixou de ser motorista, limpa os dados de CNH
-                              if (selectedRole != EmployeeRole.driver) {
-                                selectedLicenseCategory = null;
-                                selectedExpiration = null;
-                              }
-                            });
+                        BlocBuilder<RoleBloc, RoleState>(
+                          builder: (context, roleState) {
+                            if (roleState is RoleLoading) {
+                              return const CircularProgressIndicator();
+                            }
+                            if (roleState is RoleLoaded) {
+                              return DropdownButtonFormField<int>(
+                                isExpanded: true,
+                                initialValue: selectedRoleId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Cargo',
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: roleState.roles.map((role) {
+                                  return DropdownMenuItem(
+                                    value: role.id,
+                                    child: Text(role.name),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    selectedRoleId = val!;
+                                    selectedRoleName = roleState.roles
+                                        .firstWhere((r) => r.id == val)
+                                        .name;
+                                    // Se deixou de ser motorista, limpa os dados de CNH
+                                    if (selectedRoleName?.toLowerCase() !=
+                                        'motorista') {
+                                      selectedLicenseCategory = null;
+                                      selectedExpiration = null;
+                                    }
+                                  });
+                                },
+                                validator: (val) =>
+                                    val == null ? 'Obrigatório' : null,
+                              );
+                            }
+                            return const Text('Erro ao carregar cargos');
                           },
                         ),
 
                         // CAMPOS EXCLUSIVOS PARA MOTORISTAS
-                        if (selectedRole == EmployeeRole.driver) ...[
+                        if (selectedRoleName?.toLowerCase() == 'motorista') ...[
                           const SizedBox(height: 16),
                           const Divider(),
                           const SizedBox(height: 8),
@@ -215,7 +230,7 @@ class _EmployeePageState extends State<EmployeePage> {
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       // Verifica obrigatoriedade da CNH
-                      if (selectedRole == EmployeeRole.driver &&
+                      if (selectedRoleName?.toLowerCase() == 'motorista' &&
                           (selectedLicenseCategory == null ||
                               selectedExpiration == null)) {
                         return; // O Validator visual já vai acusar
@@ -225,7 +240,7 @@ class _EmployeePageState extends State<EmployeePage> {
                         id: employee?.id ?? 0,
                         name: nameController.text.trim(),
                         cpf: cpfMask.getUnmaskedText(), // Salva limpo no banco
-                        role: selectedRole,
+                        roleId: selectedRoleId!,
                         licenseCategory: selectedLicenseCategory,
                         licenseExpiration: selectedExpiration,
                         isActive: employee?.isActive ?? true,
@@ -504,7 +519,7 @@ class _EmployeePageState extends State<EmployeePage> {
                                   ),
                                   DataCell(
                                     Text(
-                                      _roleLabels[emp.role] ?? '',
+                                      emp.roleName ?? '',
                                       style: TextStyle(
                                         color: emp.isActive
                                             ? Colors.black
@@ -512,8 +527,48 @@ class _EmployeePageState extends State<EmployeePage> {
                                       ),
                                     ),
                                   ),
+
                                   DataCell(
-                                    emp.role == EmployeeRole.driver
+                                    Row(
+                                      children: [
+                                        Text(
+                                          emp.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: emp.isActive
+                                                ? Colors.black
+                                                : Colors.grey,
+                                          ),
+                                        ),
+                                        if (!emp.isActive) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.error.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'Inativo',
+                                              style: TextStyle(
+                                                color: AppColors.error,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(
+                                    emp.roleName?.toLowerCase() == 'motorista'
                                         ? _buildCNHChip(
                                             emp.licenseCategory,
                                             emp.licenseExpiration,

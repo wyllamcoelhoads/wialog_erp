@@ -13,9 +13,13 @@ class AuthPostgresDataSource implements AuthDataSource {
 
   @override
   Future<UserModel?> authenticate(String email, String password) async {
-    // Busca o usuário batendo e-mail e senha
-    const sql =
-        'SELECT * FROM users WHERE email = @email AND password = @password';
+    const sql = '''
+      SELECT u.*, e.name as employee_name, r.name as role_name 
+      FROM users u
+      JOIN employees e ON u.employee_id = e.id
+      JOIN roles r ON u.role_id = r.id
+      WHERE u.email = @email AND u.password = @password
+    ''';
 
     final result = await dbConnection.query(sql, {
       'email': email,
@@ -23,7 +27,7 @@ class AuthPostgresDataSource implements AuthDataSource {
     });
 
     if (result.isEmpty) {
-      return null; // Credenciais inválidas
+      return null;
     }
 
     return UserModel.fromMap(result.first.toColumnMap());

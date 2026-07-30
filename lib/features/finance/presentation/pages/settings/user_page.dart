@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
-import 'package:wialog_erp/features/finance/domain/entities/employee_entity.dart';
 import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_event.dart';
@@ -9,6 +8,9 @@ import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_state.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_event.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_state.dart';
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -21,12 +23,6 @@ class _UserPageState extends State<UserPage> {
   bool _showInactive = false;
   bool _obscurePassword = true;
 
-  final Map<UserRole, String> _roleLabels = {
-    UserRole.admin: 'Administrador (Total)',
-    UserRole.financial: 'Financeiro',
-    UserRole.operational: 'Operacional (Frotas)',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -35,6 +31,7 @@ class _UserPageState extends State<UserPage> {
     context.read<EmployeeBloc>().add(
       const LoadEmployees(includeInactive: false),
     );
+    context.read<RoleBloc>().add(const LoadRoles(includeInactive: false));
   }
 
   void _showUserDialog({UserEntity? user}) {
@@ -46,7 +43,7 @@ class _UserPageState extends State<UserPage> {
       text: user?.password ?? '',
     );
 
-    UserRole selectedRole = user?.role ?? UserRole.operational;
+    int? selectedRoleId = user?.roleId;
     int? selectedEmployeeId = user?.employeeId;
 
     showDialog(
@@ -79,7 +76,11 @@ class _UserPageState extends State<UserPage> {
                             if (empState is EmployeeLoaded) {
                               // FILTRO: Remove os Motoristas (Eles não logam no sistema)
                               final eligibleEmployees = empState.employees
-                                  .where((e) => e.role != EmployeeRole.driver)
+                                  .where(
+                                    (e) =>
+                                        e.roleName?.toLowerCase() !=
+                                        'motorista',
+                                  )
                                   .toList();
 
                               // Se estiver editando, não pode trocar de funcionário (apenas mostrar o nome)
@@ -161,23 +162,35 @@ class _UserPageState extends State<UserPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // BLOCO 3: Permissão (Role)
-                        DropdownButtonFormField<UserRole>(
-                          isExpanded: true,
-                          initialValue: selectedRole,
-                          decoration: const InputDecoration(
-                            labelText: 'Nível de Permissão',
-                            prefixIcon: Icon(Icons.security),
-                            border: OutlineInputBorder(),
-                          ),
-                          items: UserRole.values.map((role) {
-                            return DropdownMenuItem(
-                              value: role,
-                              child: Text(_roleLabels[role]!),
-                            );
-                          }).toList(),
-                          onChanged: (val) =>
-                              setDialogState(() => selectedRole = val!),
+                        // BLOCO 3: Permissão (Role Dinâmico)
+                        BlocBuilder<RoleBloc, RoleState>(
+                          builder: (context, roleState) {
+                            if (roleState is RoleLoading) {
+                              return const CircularProgressIndicator();
+                            }
+                            if (roleState is RoleLoaded) {
+                              return DropdownButtonFormField<int>(
+                                isExpanded: true,
+                                initialValue: selectedRoleId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nível de Permissão',
+                                  prefixIcon: Icon(Icons.security),
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: roleState.roles.map((role) {
+                                  return DropdownMenuItem(
+                                    value: role.id,
+                                    child: Text(role.name),
+                                  );
+                                }).toList(),
+                                onChanged: (val) =>
+                                    setDialogState(() => selectedRoleId = val!),
+                                validator: (val) =>
+                                    val == null ? 'Obrigatório' : null,
+                              );
+                            }
+                            return const Text('Erro ao carregar cargos');
+                          },
                         ),
                       ],
                     ),
@@ -197,7 +210,7 @@ class _UserPageState extends State<UserPage> {
                         employeeId: selectedEmployeeId!,
                         email: emailController.text.trim().toLowerCase(),
                         password: passwordController.text,
-                        role: selectedRole,
+                        roleId: selectedRoleId!,
                         isActive: user?.isActive ?? true,
                       );
 
@@ -225,7 +238,7 @@ class _UserPageState extends State<UserPage> {
   }
 
   void _confirmDelete(UserEntity user) {
-    if (user.role == UserRole.admin && user.id == 1) {
+    if (user.roleName?.toLowerCase() == 'administrador' && user.id == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Você não pode inativar o Administrador Principal!'),
@@ -449,7 +462,7 @@ class _UserPageState extends State<UserPage> {
                                   ),
                                   DataCell(
                                     Text(
-                                      _roleLabels[user.role] ?? '',
+                                      user.roleName ?? '',
                                       style: TextStyle(
                                         color: user.isActive
                                             ? Colors.black

@@ -7,7 +7,8 @@ class UserModel extends UserEntity {
     super.employeeName,
     required super.email,
     required super.password,
-    required super.role,
+    required super.roleId,
+    super.roleName,
     super.isActive,
   });
 
@@ -15,13 +16,11 @@ class UserModel extends UserEntity {
     return UserModel(
       id: map['id'],
       employeeId: map['employee_id'],
-      employeeName: map['employee_name'], // Vem do JOIN
+      employeeName: map['employee_name'],
       email: map['email'],
       password: map['password'],
-      role: UserRole.values.firstWhere(
-        (e) => e.name == map['role'],
-        orElse: () => UserRole.operational,
-      ),
+      roleId: map['role_id'],
+      roleName: map['role_name'],
       isActive: map['is_active'] ?? true,
     );
   }
@@ -32,7 +31,7 @@ class UserModel extends UserEntity {
       'employee_id': employeeId,
       'email': email,
       'password': password,
-      'role': role.name,
+      'role_id': roleId,
       'is_active': isActive,
     };
   }
@@ -44,7 +43,8 @@ class UserModel extends UserEntity {
       employeeName: entity.employeeName,
       email: entity.email,
       password: entity.password,
-      role: entity.role,
+      roleId: entity.roleId,
+      roleName: entity.roleName,
       isActive: entity.isActive,
     );
   }

@@ -16,13 +16,18 @@ class EmployeePostgresDataSource implements EmployeeDataSource {
   Future<List<EmployeeModel>> getEmployees({
     bool includeInactive = false,
   }) async {
-    String sql = 'SELECT * FROM employees WHERE 1=1';
+    String sql = '''
+      SELECT e.*, r.name as role_name 
+      FROM employees e
+      LEFT JOIN roles r ON e.role_id = r.id
+      WHERE 1=1
+    ''';
 
     if (!includeInactive) {
-      sql += ' AND is_active = true';
+      sql += ' AND e.is_active = true';
     }
 
-    sql += ' ORDER BY name ASC';
+    sql += ' ORDER BY e.name ASC';
 
     final result = await dbConnection.query(sql);
     return result
@@ -33,8 +38,8 @@ class EmployeePostgresDataSource implements EmployeeDataSource {
   @override
   Future<EmployeeModel> createEmployee(EmployeeModel employee) async {
     const sql = '''
-      INSERT INTO employees (name, cpf, role, license_category, license_expiration, is_active)
-      VALUES (@name, @cpf, @role, @license_category, @license_expiration, @is_active)
+      INSERT INTO employees (name, cpf, role_id, license_category, license_expiration, is_active)
+      VALUES (@name, @cpf, @role_id, @license_category, @license_expiration, @is_active)
       RETURNING *;
     ''';
     final params = employee.toMap();
@@ -47,7 +52,7 @@ class EmployeePostgresDataSource implements EmployeeDataSource {
   Future<EmployeeModel> updateEmployee(EmployeeModel employee) async {
     const sql = '''
       UPDATE employees 
-      SET name = @name, cpf = @cpf, role = @role, 
+      SET name = @name, cpf = @cpf, role_id = @role_id, 
           license_category = @license_category, license_expiration = @license_expiration, 
           is_active = @is_active
       WHERE id = @id
