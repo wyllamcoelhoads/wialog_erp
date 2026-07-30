@@ -81,8 +81,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       } else {
         // Se passou em tudo, logado com sucesso!
-        // No futuro podemos salvar o usuário inteiro, por enquanto passamos a role
-        emit(AuthAuthenticated(role: user.role.name));
+        emit(AuthAuthenticated(role: user.roleName ?? 'Desconhecido'));
       }
     } catch (e) {
       emit(AuthError(message: 'Erro de conexão com o banco de dados.'));

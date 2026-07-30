@@ -14,11 +14,11 @@ class UserPostgresDataSource implements UserDataSource {
 
   @override
   Future<List<UserModel>> getUsers({bool includeInactive = false}) async {
-    // Faz o JOIN para pegar o nome do funcionário dono deste login
     String sql = '''
-      SELECT u.*, e.name as employee_name 
+      SELECT u.*, e.name as employee_name, r.name as role_name 
       FROM users u
       JOIN employees e ON u.employee_id = e.id
+      JOIN roles r ON u.role_id = r.id
       WHERE 1=1
     ''';
 
@@ -32,8 +32,8 @@ class UserPostgresDataSource implements UserDataSource {
   @override
   Future<UserModel> createUser(UserModel user) async {
     const sql = '''
-      INSERT INTO users (employee_id, email, password, role, is_active)
-      VALUES (@employee_id, @email, @password, @role, @is_active)
+      INSERT INTO users (employee_id, email, password, role_id, is_active)
+      VALUES (@employee_id, @email, @password, @role_id, @is_active)
       RETURNING *;
     ''';
     final params = user.toMap();
@@ -46,11 +46,10 @@ class UserPostgresDataSource implements UserDataSource {
   Future<UserModel> updateUser(UserModel user) async {
     const sql = '''
       UPDATE users 
-      SET email = @email, password = @password, role = @role, is_active = @is_active
+      SET email = @email, password = @password, role_id = @role_id, is_active = @is_active
       WHERE id = @id
       RETURNING *;
     ''';
-    // O employee_id não é atualizado para evitar trocar a "identidade" da pessoa
     final result = await dbConnection.query(sql, user.toMap());
     return UserModel.fromMap(result.first.toColumnMap());
   }
