@@ -9,8 +9,14 @@ class CategoryRepositoryImpl implements CategoryRepository {
   CategoryRepositoryImpl(this.dataSource);
 
   @override
-  Future<List<CategoryEntity>> getCategories({CategoryType? type}) async {
-    return await dataSource.getCategories(type: type);
+  Future<List<CategoryEntity>> getCategories({
+    CategoryType? type,
+    bool includeInactive = false,
+  }) async {
+    return await dataSource.getCategories(
+      type: type,
+      includeInactive: includeInactive,
+    );
   }
 
   @override
