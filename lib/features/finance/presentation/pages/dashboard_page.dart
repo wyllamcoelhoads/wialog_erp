@@ -311,13 +311,15 @@ class DashboardPageState extends State<DashboardPage> {
     required String title,
     required VoidCallback onTap,
   }) {
-    // Para destacar no menu lateral, poderíamos verificar se o ID da aba ativa corresponde ao item,
-    // mas num sistema de abas, é melhor o menu funcionar apenas como "atalho de abertura".
-    return ListTile(
-      leading: Icon(icon, color: Colors.white70),
-      title: Text(title, style: const TextStyle(color: Colors.white70)),
-      onTap: onTap,
-      hoverColor: Colors.white.withValues(alpha: 0.1),
+    // CORREÇÃO AQUI: O Material transparente envolve o ListTile para permitir os efeitos de clique
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white70),
+        title: Text(title, style: const TextStyle(color: Colors.white70)),
+        onTap: onTap,
+        hoverColor: Colors.white.withOpacity(0.1),
+      ),
     );
   }
 

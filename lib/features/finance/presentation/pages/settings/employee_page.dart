@@ -97,7 +97,8 @@ class _EmployeePageState extends State<EmployeePage> {
                             if (roleState is RoleLoaded) {
                               return DropdownButtonFormField<int>(
                                 isExpanded: true,
-                                initialValue: selectedRoleId,
+                                // CORREÇÃO 1: Troque initialValue por value
+                                value: selectedRoleId,
                                 decoration: const InputDecoration(
                                   labelText: 'Cargo',
                                   border: OutlineInputBorder(),
@@ -147,7 +148,8 @@ class _EmployeePageState extends State<EmployeePage> {
                             children: [
                               Expanded(
                                 child: DropdownButtonFormField<String>(
-                                  initialValue: selectedLicenseCategory,
+                                  // CORREÇÃO 2: Troque initialValue por value
+                                  value: selectedLicenseCategory,
                                   decoration: const InputDecoration(
                                     labelText: 'Categoria',
                                     border: OutlineInputBorder(),
@@ -567,6 +569,17 @@ class _EmployeePageState extends State<EmployeePage> {
                                       ],
                                     ),
                                   ),
+                                  DataCell(
+                                    Text(
+                                      emp.roleName ?? '',
+                                      style: TextStyle(
+                                        color: emp.isActive
+                                            ? Colors.black
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                  // CORREÇÃO 3: Apague UMA das células duplicadas abaixo. Deixe apenas UMA!
                                   DataCell(
                                     emp.roleName?.toLowerCase() == 'motorista'
                                         ? _buildCNHChip(

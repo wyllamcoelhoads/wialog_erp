@@ -13,9 +13,13 @@ class UserLoading extends UserState {}
 
 class UserLoaded extends UserState {
   final List<UserEntity> users;
-  const UserLoaded(this.users);
+  final List<UserEntity>
+  allUsers; // NOVO: Guarda a lista completa (com inativos) para validações
+
+  const UserLoaded(this.users, {this.allUsers = const []});
+
   @override
-  List<Object?> get props => [users];
+  List<Object?> get props => [users, allUsers];
 }
 
 class UserError extends UserState {

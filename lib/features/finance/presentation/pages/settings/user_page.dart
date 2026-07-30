@@ -9,6 +9,7 @@ import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dar
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_state.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_event.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_state.dart';
 
 class UserPage extends StatefulWidget {
@@ -32,6 +33,8 @@ class _UserPageState extends State<UserPage> {
     context.read<EmployeeBloc>().add(
       const LoadEmployees(includeInactive: false),
     );
+    // CORREÇÃO: Faltava carregar os Cargos (Roles) para o formulário!
+    context.read<RoleBloc>().add(const LoadRoles(includeInactive: false));
   }
 
   void _showUserDialog({UserEntity? user}) {
@@ -48,9 +51,9 @@ class _UserPageState extends State<UserPage> {
 
     // NOVO: Pegamos a lista atual de usuários carregados na tela para usar no filtro
     final userState = context.read<UserBloc>().state;
-    List<UserEntity> currentUsers = [];
+    List<UserEntity> allSystemUsers = [];
     if (userState is UserLoaded) {
-      currentUsers = userState.users;
+      allSystemUsers = userState.allUsers;
     }
 
     showDialog(
@@ -81,15 +84,14 @@ class _UserPageState extends State<UserPage> {
                               );
                             }
                             if (empState is EmployeeLoaded) {
-                              // FILTRO 1: Remove Motoristas E remove quem já tem login criado!
+                              // FILTRO: Remove Motoristas E remove quem já tem conta (ativo ou inativo) usando a lista completa!
                               final eligibleEmployees = empState.employees
                                   .where((e) {
                                     final isNotDriver =
                                         e.roleName?.toLowerCase() !=
                                         'motorista';
-                                    final alreadyHasAccount = currentUsers.any(
-                                      (u) => u.employeeId == e.id,
-                                    );
+                                    final alreadyHasAccount = allSystemUsers
+                                        .any((u) => u.employeeId == e.id);
                                     return isNotDriver && !alreadyHasAccount;
                                   })
                                   .toList();
@@ -110,7 +112,7 @@ class _UserPageState extends State<UserPage> {
 
                               return DropdownButtonFormField<int>(
                                 isExpanded: true,
-                                initialValue: selectedEmployeeId,
+                                value: selectedEmployeeId,
                                 decoration: const InputDecoration(
                                   labelText: 'Vincular a qual Funcionário?',
                                   border: OutlineInputBorder(),
@@ -177,8 +179,9 @@ class _UserPageState extends State<UserPage> {
                         // BLOCO 3: Permissão (Role Dinâmico)
                         BlocBuilder<RoleBloc, RoleState>(
                           builder: (context, roleState) {
-                            if (roleState is RoleLoading)
+                            if (roleState is RoleLoading) {
                               return const CircularProgressIndicator();
+                            }
                             if (roleState is RoleLoaded) {
                               // FILTRO 2: Remove a opção "Motorista" das permissões do sistema
                               final eligibleRoles = roleState.roles
@@ -373,23 +376,26 @@ class _UserPageState extends State<UserPage> {
                 ),
                 child: BlocBuilder<UserBloc, UserState>(
                   builder: (context, state) {
-                    if (state is UserLoading)
+                    if (state is UserLoading) {
                       return const Center(child: CircularProgressIndicator());
-                    if (state is UserError)
+                    }
+                    if (state is UserError) {
                       return Center(
                         child: Text(
                           state.message,
                           style: const TextStyle(color: AppColors.error),
                         ),
                       );
+                    }
                     if (state is UserLoaded) {
-                      if (state.users.isEmpty)
+                      if (state.users.isEmpty) {
                         return const Center(
                           child: Text(
                             'Nenhum usuário encontrado.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         );
+                      }
 
                       return SingleChildScrollView(
                         scrollDirection: Axis.vertical,
