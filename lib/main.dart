@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Usaremos o package base do flutter para Windows para definir o tamanho
 import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
@@ -14,7 +15,6 @@ import 'dart:io' show Platform;
 
 import 'core/theme/app_colors.dart';
 import 'features/auth/presentation/pages/login_page.dart';
-import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/di/service_locator.dart';
 import 'features/finance/presentation/bloc/partner/partner_bloc.dart';
 
@@ -44,7 +44,7 @@ class WiaLogApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
+        BlocProvider<AuthBloc>(create: (context) => sl<AuthBloc>()),
         // Adicionando o BLoC de Parceiros para todo o app ter acesso!
         BlocProvider<PartnerBloc>(create: (context) => sl<PartnerBloc>()),
         BlocProvider<CategoryBloc>(

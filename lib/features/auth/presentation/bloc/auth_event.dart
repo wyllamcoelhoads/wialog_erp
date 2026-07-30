@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
+// NOVO: Importando o repositório
+import '../../domain/repositories/auth_repository.dart';
+
 // No padrão BLoC convencional, isso ficaria em auth_event.dart
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -50,7 +53,9 @@ class AuthError extends AuthState {
 }
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc() : super(AuthInitial()) {
+  final AuthRepository repository; // NOVO: Injeção do repositório
+
+  AuthBloc(this.repository) : super(AuthInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
   }
 
@@ -61,17 +66,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
 
     try {
-      // Simulação de delay de rede/banco de dados
-      await Future.delayed(const Duration(seconds: 2));
+      // Bate no banco de dados real
+      final user = await repository.authenticate(event.email, event.password);
 
-      // Validação fake para o MVP
-      if (event.email == 'admin@wialog.com' && event.password == '123456') {
-        emit(const AuthAuthenticated(role: 'Admin'));
-      } else {
+      if (user == null) {
+        // Se retornou nulo, é porque e-mail ou senha não bateram
         emit(const AuthError(message: 'E-mail ou senha inválidos.'));
+      } else if (!user.isActive) {
+        // Se achou o usuário, mas isActive é false (Bloqueado)
+        emit(
+          const AuthError(
+            message: 'Seu acesso está bloqueado. Contate o administrador.',
+          ),
+        );
+      } else {
+        // Se passou em tudo, logado com sucesso!
+        // No futuro podemos salvar o usuário inteiro, por enquanto passamos a role
+        emit(AuthAuthenticated(role: user.role.name));
       }
     } catch (e) {
-      emit(const AuthError(message: 'Erro ao tentar realizar o login.'));
+      emit(AuthError(message: 'Erro de conexão com o banco de dados.'));
     }
   }
 }
