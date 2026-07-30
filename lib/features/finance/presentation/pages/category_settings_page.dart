@@ -18,7 +18,7 @@ class CategorySettingsPage extends StatefulWidget {
 class _CategorySettingsPageState extends State<CategorySettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
+  bool _showInactive = false;
   @override
   void initState() {
     super.initState();
@@ -57,7 +57,9 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
   }
 
   void _loadCategories() {
-    context.read<CategoryBloc>().add(LoadCategories(type: _currentType));
+    context.read<CategoryBloc>().add(
+      LoadCategories(type: _currentType, includeInactive: _showInactive),
+    );
   }
 
   void _showCategoryDialog({CategoryEntity? category}) {
@@ -105,7 +107,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                     id: category?.id ?? 0,
                     name: nameController.text.trim(),
                     type: typeToSave,
-                    isActive: true,
+                    isActive: category?.isActive ?? true,
                   );
 
                   if (isEditing) {
@@ -130,7 +132,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Excluir Categoria?'),
+        title: const Text('Inativar Categoria?'),
         content: Text(
           'Tem certeza que deseja inativar a categoria "${category.name}"?',
         ),
@@ -147,7 +149,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
               );
               Navigator.of(ctx).pop();
             },
-            child: const Text('Sim, Excluir'),
+            child: const Text('Sim, Inativar'),
           ),
         ],
       ),
@@ -163,7 +165,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // CABEÇALHO E BOTÃO
+            // CABEÇALHO E BOTÕES
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -175,20 +177,37 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                     color: AppColors.textTitle,
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _showCategoryDialog(),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: Text(
-                    'Nova Categoria ($_typeLabel)',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                Row(
+                  children: [
+                    const Text(
+                      'Mostrar Inativas',
+                      style: TextStyle(color: AppColors.textMuted),
                     ),
-                  ),
+                    Switch(
+                      value: _showInactive,
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() => _showInactive = val);
+                        _loadCategories();
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => _showCategoryDialog(),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: Text(
+                        'Nova Categoria ($_typeLabel)',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -244,7 +263,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                       if (state.categories.isEmpty) {
                         return const Center(
                           child: Text(
-                            'Nenhuma categoria cadastrada.',
+                            'Nenhuma categoria encontrada.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         );
@@ -278,8 +297,55 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                               .map(
                                 (cat) => DataRow(
                                   cells: [
-                                    DataCell(Text(cat.id.toString())),
-                                    DataCell(Text(cat.name)),
+                                    DataCell(
+                                      Text(
+                                        cat.id.toString(),
+                                        style: TextStyle(
+                                          color: cat.isActive
+                                              ? Colors.black
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          Text(
+                                            cat.name,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: cat.isActive
+                                                  ? Colors.black
+                                                  : Colors.grey,
+                                            ),
+                                          ),
+                                          if (!cat.isActive) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.error
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'Inativa',
+                                                style: TextStyle(
+                                                  color: AppColors.error,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                     DataCell(
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -296,16 +362,17 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                                 ),
                                             tooltip: 'Editar',
                                           ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: AppColors.error,
-                                              size: 20,
+                                          if (cat.isActive)
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: AppColors.error,
+                                                size: 20,
+                                              ),
+                                              onPressed: () =>
+                                                  _confirmDelete(cat),
+                                              tooltip: 'Inativar',
                                             ),
-                                            onPressed: () =>
-                                                _confirmDelete(cat),
-                                            tooltip: 'Excluir',
-                                          ),
                                         ],
                                       ),
                                     ),

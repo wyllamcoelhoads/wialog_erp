@@ -23,7 +23,7 @@ class CategoryPostgresDataSource implements CategoryDataSource {
     bool includeInactive = false,
   }) async {
     // MUDANÇA: Agora lemos da tabela "categories"
-    String sql = 'SELECT * FROM categories WHERE is_active = true';
+    String sql = 'SELECT * FROM categories WHERE 1=1';
     Map<String, dynamic> params = {};
 
     if (!includeInactive) {
