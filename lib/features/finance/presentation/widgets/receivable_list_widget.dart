@@ -251,6 +251,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                         );
                       }
                       return SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: DataTable(
                           showCheckboxColumn: false,
                           headingRowColor: WidgetStateProperty.all(
