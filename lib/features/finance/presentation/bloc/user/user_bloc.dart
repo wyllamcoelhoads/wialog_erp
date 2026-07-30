@@ -12,10 +12,15 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       emit(UserLoading());
       _lastIncludeInactive = event.includeInactive;
       try {
-        final list = await repository.getUsers(
-          includeInactive: event.includeInactive,
-        );
-        emit(UserLoaded(list));
+        // Busca TODOS os usuários (ativos e inativos) para o sistema poder fazer validações internas
+        final allUsersList = await repository.getUsers(includeInactive: true);
+
+        // Filtra a lista apenas para os que devem aparecer na tabela visualmente
+        final displayList = event.includeInactive
+            ? allUsersList
+            : allUsersList.where((u) => u.isActive).toList();
+
+        emit(UserLoaded(displayList, allUsers: allUsersList));
       } catch (e) {
         emit(UserError('Erro ao carregar usuários: $e'));
       }
