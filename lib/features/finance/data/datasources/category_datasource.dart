@@ -4,7 +4,10 @@ import '../../../../core/database/database_connection.dart';
 import '../models/category_model.dart';
 
 abstract class CategoryDataSource {
-  Future<List<CategoryModel>> getCategories({CategoryType? type});
+  Future<List<CategoryModel>> getCategories({
+    CategoryType? type,
+    bool includeInactive = false,
+  });
   Future<CategoryModel> createCategory(CategoryModel category);
   Future<CategoryModel> updateCategory(CategoryModel category);
   Future<void> deleteCategory(int id);
@@ -15,11 +18,17 @@ class CategoryPostgresDataSource implements CategoryDataSource {
   CategoryPostgresDataSource(this.dbConnection);
 
   @override
-  Future<List<CategoryModel>> getCategories({CategoryType? type}) async {
+  Future<List<CategoryModel>> getCategories({
+    CategoryType? type,
+    bool includeInactive = false,
+  }) async {
     // MUDANÇA: Agora lemos da tabela "categories"
-    String sql = 'SELECT * FROM categories WHERE is_active = true';
+    String sql = 'SELECT * FROM categories WHERE 1=1';
     Map<String, dynamic> params = {};
 
+    if (!includeInactive) {
+      sql += ' AND is_active = true';
+    }
     // Filtra pelo tipo que a tela pedir
     if (type != null) {
       sql += ' AND type = @type';
