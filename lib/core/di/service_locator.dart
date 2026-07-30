@@ -19,6 +19,10 @@ import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
+import 'package:wialog_erp/features/role/data/datasources/role_data_source.dart';
+import 'package:wialog_erp/features/role/data/repositories/role_repository_impl.dart';
+import 'package:wialog_erp/features/role/domain/repositories/role_repository.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import '../database/database_connection.dart';
 
 // Imports de Parceiros
@@ -106,6 +110,12 @@ Future<void> initDependencies() async {
     () => EmployeeRepositoryImpl(sl()),
   );
   sl.registerFactory<EmployeeBloc>(() => EmployeeBloc(sl()));
+  // ==========================
+  // CARGOS E PERMISSÕES
+  // ==========================
+  sl.registerLazySingleton<RoleDataSource>(() => RolePostgresDataSource(sl()));
+  sl.registerLazySingleton<RoleRepository>(() => RoleRepositoryImpl(sl()));
+  sl.registerFactory<RoleBloc>(() => RoleBloc(sl()));
   // ==========================
   // NOVO: AUTENTICAÇÃO (LOGIN)
   // ==========================

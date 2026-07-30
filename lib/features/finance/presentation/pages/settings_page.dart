@@ -4,6 +4,7 @@ import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_acc
 import 'package:wialog_erp/features/finance/presentation/pages/settings/employee_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/user_page.dart';
+import 'package:wialog_erp/features/role/presentation/pages/role_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'category_settings_page.dart';
 
@@ -103,6 +104,23 @@ class SettingsPage extends StatelessWidget {
                         title: 'Usuários',
                         icon: Icons.manage_accounts,
                         content: const UserPage(),
+                      ),
+                    );
+                  },
+                ),
+                // O CARTÃO DE CARGOS
+                _buildSettingsCard(
+                  context,
+                  title: 'Cargos do Sistema',
+                  subtitle: 'Gestão de papéis e regras de acesso.',
+                  icon: Icons.work_outline,
+                  onTap: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_roles',
+                        title: 'Cargos',
+                        icon: Icons.work,
+                        content: const RolePage(),
                       ),
                     );
                   },

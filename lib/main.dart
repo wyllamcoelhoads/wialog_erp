@@ -11,6 +11,7 @@ import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import 'dart:io' show Platform;
 
 import 'core/theme/app_colors.dart';
@@ -59,6 +60,7 @@ class WiaLogApp extends StatelessWidget {
         ),
         BlocProvider<EmployeeBloc>(create: (context) => sl<EmployeeBloc>()),
         BlocProvider<UserBloc>(create: (context) => sl<UserBloc>()),
+        BlocProvider<RoleBloc>(create: (context) => sl<RoleBloc>()),
       ],
       child: MaterialApp(
         title: 'WiaLog ERP',
