@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_account_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/employee_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'category_settings_page.dart';
@@ -104,7 +105,14 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Gestão da equipe operacional.',
                   icon: Icons.badge_outlined,
                   onTap: () {
-                    // TODO: Implementar tela de funcionários
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_employees',
+                        title: 'Funcionários',
+                        icon: Icons.badge,
+                        content: const EmployeePage(),
+                      ),
+                    );
                   },
                 ),
                 _buildSettingsCard(

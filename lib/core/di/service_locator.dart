@@ -1,11 +1,15 @@
 import 'package:get_it/get_it.dart';
 import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
+import 'package:wialog_erp/features/finance/data/datasources/employee_data_source.dart';
 import 'package:wialog_erp/features/finance/data/datasources/payment_method_data_source.dart';
 import 'package:wialog_erp/features/finance/data/repositories/bank_account_repository_impl.dart';
+import 'package:wialog_erp/features/finance/data/repositories/employee_repository_impl.dart';
 import 'package:wialog_erp/features/finance/data/repositories/payment_method_repository_impl.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/bank_account_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/employee_repository.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/payment_method_repository.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import '../database/database_connection.dart';
 
@@ -86,4 +90,12 @@ Future<void> initDependencies() async {
     () => PaymentMethodRepositoryImpl(sl()),
   );
   sl.registerFactory<PaymentMethodBloc>(() => PaymentMethodBloc(sl()));
+  // NOVO: FEATURES: FUNCIONÁRIOS
+  sl.registerLazySingleton<EmployeeDataSource>(
+    () => EmployeePostgresDataSource(sl()),
+  );
+  sl.registerLazySingleton<EmployeeRepository>(
+    () => EmployeeRepositoryImpl(sl()),
+  );
+  sl.registerFactory<EmployeeBloc>(() => EmployeeBloc(sl()));
 }
