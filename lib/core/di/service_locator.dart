@@ -1,4 +1,8 @@
 import 'package:get_it/get_it.dart';
+import 'package:wialog_erp/features/auth/data/datasources/auth_data_source.dart';
+import 'package:wialog_erp/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:wialog_erp/features/auth/domain/repositories/auth_repository.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
 import 'package:wialog_erp/features/finance/data/datasources/employee_data_source.dart';
 import 'package:wialog_erp/features/finance/data/datasources/payment_method_data_source.dart';
@@ -102,6 +106,13 @@ Future<void> initDependencies() async {
     () => EmployeeRepositoryImpl(sl()),
   );
   sl.registerFactory<EmployeeBloc>(() => EmployeeBloc(sl()));
+  // ==========================
+  // NOVO: AUTENTICAÇÃO (LOGIN)
+  // ==========================
+  sl.registerLazySingleton<AuthDataSource>(() => AuthPostgresDataSource(sl()));
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
+  // O AuthBloc agora recebe o repositório
+  sl.registerFactory<AuthBloc>(() => AuthBloc(sl()));
   // FEATURES: USUÁRIOS E AUTENTICAÇÃO
   sl.registerLazySingleton<UserDataSource>(() => UserPostgresDataSource(sl()));
   sl.registerLazySingleton<UserRepository>(() => UserRepositoryImpl(sl()));
