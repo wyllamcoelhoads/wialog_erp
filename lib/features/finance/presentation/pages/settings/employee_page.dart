@@ -475,32 +475,43 @@ class _EmployeePageState extends State<EmployeePage> {
                                       children: [
                                         Text(
                                           emp.name,
+
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
+
                                             color: emp.isActive
                                                 ? Colors.black
                                                 : Colors.grey,
                                           ),
                                         ),
+
                                         if (!emp.isActive) ...[
                                           const SizedBox(width: 8),
+
                                           Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 6,
+
                                               vertical: 2,
                                             ),
+
                                             decoration: BoxDecoration(
                                               color: AppColors.error.withValues(
                                                 alpha: 0.1,
                                               ),
+
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),
+
                                             child: const Text(
                                               'Inativo',
+
                                               style: TextStyle(
                                                 color: AppColors.error,
+
                                                 fontSize: 10,
+
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -509,19 +520,11 @@ class _EmployeePageState extends State<EmployeePage> {
                                       ],
                                     ),
                                   ),
+
                                   DataCell(
                                     Text(
                                       displayCpf,
-                                      style: TextStyle(
-                                        color: emp.isActive
-                                            ? Colors.black
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                      emp.roleName ?? '',
+
                                       style: TextStyle(
                                         color: emp.isActive
                                             ? Colors.black
@@ -531,47 +534,9 @@ class _EmployeePageState extends State<EmployeePage> {
                                   ),
 
                                   DataCell(
-                                    Row(
-                                      children: [
-                                        Text(
-                                          emp.name,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            color: emp.isActive
-                                                ? Colors.black
-                                                : Colors.grey,
-                                          ),
-                                        ),
-                                        if (!emp.isActive) ...[
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.error.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              'Inativo',
-                                              style: TextStyle(
-                                                color: AppColors.error,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                  DataCell(
                                     Text(
                                       emp.roleName ?? '',
+
                                       style: TextStyle(
                                         color: emp.isActive
                                             ? Colors.black
@@ -579,40 +544,52 @@ class _EmployeePageState extends State<EmployeePage> {
                                       ),
                                     ),
                                   ),
-                                  // CORREÇÃO 3: Apague UMA das células duplicadas abaixo. Deixe apenas UMA!
+
                                   DataCell(
                                     emp.roleName?.toLowerCase() == 'motorista'
                                         ? _buildCNHChip(
                                             emp.licenseCategory,
+
                                             emp.licenseExpiration,
                                           )
                                         : const Text('-'),
                                   ),
+
                                   DataCell(
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
+
                                       children: [
                                         IconButton(
                                           icon: const Icon(
                                             Icons.edit,
+
                                             color: AppColors.info,
+
                                             size: 20,
                                           ),
+
                                           onPressed: () =>
                                               _showAddEmployeeDialog(
                                                 employee: emp,
                                               ),
+
                                           tooltip: 'Editar',
                                         ),
+
                                         if (emp.isActive)
                                           IconButton(
                                             icon: const Icon(
                                               Icons.delete_outline,
+
                                               color: AppColors.error,
+
                                               size: 20,
                                             ),
+
                                             onPressed: () =>
                                                 _confirmDelete(emp),
+
                                             tooltip: 'Inativar',
                                           ),
                                       ],
@@ -625,6 +602,7 @@ class _EmployeePageState extends State<EmployeePage> {
                         ),
                       );
                     }
+
                     return const SizedBox.shrink();
                   },
                 ),
