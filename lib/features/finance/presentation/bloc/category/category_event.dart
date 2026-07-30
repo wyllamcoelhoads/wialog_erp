@@ -9,10 +9,12 @@ abstract class CategoryEvent extends Equatable {
 
 class LoadCategories extends CategoryEvent {
   final CategoryType? type;
-  const LoadCategories({this.type});
+  final bool
+  includeInactive; // Adicionei o parâmetro includeInactive com valor padrão false
+  const LoadCategories({this.type, this.includeInactive = false});
 
   @override
-  List<Object?> get props => [type];
+  List<Object?> get props => [type, includeInactive];
 }
 
 class AddCategory extends CategoryEvent {
