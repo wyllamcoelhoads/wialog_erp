@@ -3,6 +3,7 @@ import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.da
 import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_account_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/employee_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/user_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'category_settings_page.dart';
 
@@ -96,7 +97,14 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Controle de acesso, senhas e permissões.',
                   icon: Icons.manage_accounts_outlined,
                   onTap: () {
-                    // TODO: Implementar tela de usuários
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_users',
+                        title: 'Usuários',
+                        icon: Icons.manage_accounts,
+                        content: const UserPage(),
+                      ),
+                    );
                   },
                 ),
                 _buildSettingsCard(
