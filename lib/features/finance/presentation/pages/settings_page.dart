@@ -3,6 +3,7 @@ import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.da
 import 'package:wialog_erp/features/finance/presentation/pages/settings/bank_account_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/employee_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/payment_method_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/settings/preferences_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings/user_page.dart';
 import 'package:wialog_erp/features/role/presentation/pages/role_page.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -14,18 +15,18 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Configurações do Sistema',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textTitle,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 8),
@@ -150,6 +151,23 @@ class SettingsPage extends StatelessWidget {
                     // TODO: Implementar troca de senha
                   },
                 ),
+                _buildSettingsCard(
+                  context,
+                  title: 'Permissões e Preferências',
+                  subtitle:
+                      'Altere seu tema (Dark Mode) e visualize seus acessos.',
+                  icon: Icons.tune, // Ícone legal de ajustes
+                  onTap: () {
+                    DashboardPage.of(context).openTab(
+                      WorkspaceTab(
+                        id: 'settings_preferences',
+                        title: 'Minhas Preferências',
+                        icon: Icons.tune,
+                        content: const PreferencesPage(),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ],
@@ -172,12 +190,12 @@ class SettingsPage extends StatelessWidget {
         width: 320,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -192,15 +210,19 @@ class SettingsPage extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 32, color: AppColors.primary),
+              child: Icon(
+                icon,
+                size: 32,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textTitle,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 8),

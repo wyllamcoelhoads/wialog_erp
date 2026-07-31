@@ -33,7 +33,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           title: Text(
             isEditing ? 'Editar Forma de Pagamento' : 'Nova Forma de Pagamento',
           ),

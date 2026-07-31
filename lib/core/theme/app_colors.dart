@@ -18,6 +18,7 @@ class AppColors {
   static const Color background = Color(
     0xFFF4F6F8,
   ); // Fundo cinza bem claro para o sistema
+
   static const Color surface =
       Colors.white; // Fundo de cartões, modais e formulários
   static const Color sidebar =

@@ -383,7 +383,7 @@ class DashboardPageState extends State<DashboardPage> {
       width: 220,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -412,10 +412,10 @@ class DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textTitle,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
         ],

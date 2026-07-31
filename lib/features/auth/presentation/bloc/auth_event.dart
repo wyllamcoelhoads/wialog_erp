@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
 
 // NOVO: Importando o repositório
 import '../../domain/repositories/auth_repository.dart';
@@ -35,12 +36,12 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthAuthenticated extends AuthState {
-  final String role; // ex: Admin, Fiscal, Financeiro
+  final UserEntity user; // Alterado para armazenar o usuário completo
 
-  const AuthAuthenticated({required this.role});
+  const AuthAuthenticated({required this.user});
 
   @override
-  List<Object> get props => [role];
+  List<Object> get props => [user];
 }
 
 class AuthError extends AuthState {
@@ -81,7 +82,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       } else {
         // Se passou em tudo, logado com sucesso!
-        emit(AuthAuthenticated(role: user.roleName ?? 'Desconhecido'));
+        emit(
+          AuthAuthenticated(user: user),
+        ); // NOVO: Passando o usuário completo para o estado
       }
     } catch (e) {
       emit(AuthError(message: 'Erro de conexão com o banco de dados.'));

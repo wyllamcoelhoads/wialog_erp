@@ -53,7 +53,7 @@ class _EmployeePageState extends State<EmployeePage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               title: Text(
                 isEditing ? 'Editar Funcionário' : 'Novo Funcionário',
               ),
@@ -98,7 +98,7 @@ class _EmployeePageState extends State<EmployeePage> {
                               return DropdownButtonFormField<int>(
                                 isExpanded: true,
                                 // CORREÇÃO 1: Troque initialValue por value
-                                value: selectedRoleId,
+                                initialValue: selectedRoleId,
                                 decoration: const InputDecoration(
                                   labelText: 'Cargo',
                                   border: OutlineInputBorder(),
@@ -149,7 +149,7 @@ class _EmployeePageState extends State<EmployeePage> {
                               Expanded(
                                 child: DropdownButtonFormField<String>(
                                   // CORREÇÃO 2: Troque initialValue por value
-                                  value: selectedLicenseCategory,
+                                  initialValue: selectedLicenseCategory,
                                   decoration: const InputDecoration(
                                     labelText: 'Categoria',
                                     border: OutlineInputBorder(),
@@ -322,7 +322,7 @@ class _EmployeePageState extends State<EmployeePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -426,7 +426,7 @@ class _EmployeePageState extends State<EmployeePage> {
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(
-                              AppColors.background,
+                              Theme.of(context).scaffoldBackgroundColor,
                             ),
                             columns: const [
                               DataColumn(

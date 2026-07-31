@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wialog_erp/core/theme/theme_cubit.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import '../bloc/auth_event.dart';
 
@@ -77,9 +78,13 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         );
                       } else if (state is AuthAuthenticated) {
+                        context.read<ThemeCubit>().setTheme(state.user.theme);
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Bem-vindo, ${state.role}!'),
+                            content: Text(
+                              'Bem-vindo, ${state.user.employeeName ?? 'Usuário'}!',
+                            ),
                             backgroundColor: Colors.green.shade700,
                           ),
                         );

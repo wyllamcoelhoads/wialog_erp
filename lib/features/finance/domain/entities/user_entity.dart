@@ -7,6 +7,8 @@ class UserEntity {
   final int roleId;
   final String? roleName; // Trazido do banco
   final bool isActive;
+  final String theme;
+  final String? customPermissions;
 
   UserEntity({
     required this.id,
@@ -17,5 +19,7 @@ class UserEntity {
     required this.roleId,
     this.roleName,
     this.isActive = true,
+    this.theme = 'light',
+    this.customPermissions,
   });
 }

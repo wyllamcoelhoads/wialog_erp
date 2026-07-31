@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Usaremos o package base do flutter para Windows para definir o tamanho
 import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/core/theme/theme_cubit.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
@@ -61,20 +62,34 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<EmployeeBloc>(create: (context) => sl<EmployeeBloc>()),
         BlocProvider<UserBloc>(create: (context) => sl<UserBloc>()),
         BlocProvider<RoleBloc>(create: (context) => sl<RoleBloc>()),
+        BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
       ],
-      child: MaterialApp(
-        title: 'WiaLog ERP',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-          useMaterial3: true,
-          fontFamily: 'Segoe UI',
-        ),
-        // TABELA DE ROTAS: Isso resolve o erro de navegação entre telas!
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const LoginPage(),
-          '/dashboard': (context) => const DashboardPage(),
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp(
+            title: 'WiaLog ERP',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeMode,
+            theme: ThemeData.light(useMaterial3: true).copyWith(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF1E3A8A),
+                brightness: Brightness.light,
+              ),
+              scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+            ),
+            darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF1E3A8A),
+                brightness: Brightness.dark,
+              ),
+              scaffoldBackgroundColor: const Color(0xFF121212),
+            ),
+            initialRoute: '/login',
+            routes: {
+              '/': (context) => const LoginPage(),
+              '/dashboard': (context) => const DashboardPage(),
+            },
+          );
         },
       ),
     );

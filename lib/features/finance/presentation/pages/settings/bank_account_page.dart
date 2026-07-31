@@ -62,7 +62,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.background,
           title: Text(
             isEditing
                 ? 'Editar Conta Bancária / Caixa'

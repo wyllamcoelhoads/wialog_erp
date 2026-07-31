@@ -32,12 +32,12 @@ class UserPostgresDataSource implements UserDataSource {
   @override
   Future<UserModel> createUser(UserModel user) async {
     const sql = '''
-      INSERT INTO users (employee_id, email, password, role_id, is_active)
-      VALUES (@employee_id, @email, @password, @role_id, @is_active)
+      INSERT INTO users (employee_id, email, password, role_id, theme, custom_permissions, is_active)
+      VALUES (@employee_id, @email, @password, @role_id, @theme, @custom_permissions, @is_active)
       RETURNING *;
     ''';
     final params = user.toMap();
-    params.remove('id');
+    params.remove('employee_id');
     final result = await dbConnection.query(sql, params);
     return UserModel.fromMap(result.first.toColumnMap());
   }
@@ -46,7 +46,7 @@ class UserPostgresDataSource implements UserDataSource {
   Future<UserModel> updateUser(UserModel user) async {
     const sql = '''
       UPDATE users 
-      SET email = @email, password = @password, role_id = @role_id, is_active = @is_active
+      SET email = @email, password = @password, role_id = @role_id, is_active = @is_active, theme = @theme, custom_permissions = @custom_permissions
       WHERE id = @id
       RETURNING *;
     ''';
