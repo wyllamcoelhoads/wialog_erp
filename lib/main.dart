@@ -15,7 +15,6 @@ import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.da
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import 'dart:io' show Platform;
 
-import 'core/theme/app_colors.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'core/di/service_locator.dart';
 import 'features/finance/presentation/bloc/partner/partner_bloc.dart';
