@@ -95,7 +95,7 @@ class DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
         children: [
           // ==============================
@@ -107,7 +107,11 @@ class DashboardPageState extends State<DashboardPage> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.local_shipping, size: 48, color: Colors.white),
+                Icon(
+                  Icons.local_shipping,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(height: 10),
                 const Text(
                   'WiaLog ERP',
@@ -203,7 +207,7 @@ class DashboardPageState extends State<DashboardPage> {
                 // Barra Superior de Abas (Estilo Navegador)
                 Container(
                   height: 50,
-                  color: Colors.white,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   width: double.infinity,
                   child: Row(
                     children: [
@@ -225,12 +229,16 @@ class DashboardPageState extends State<DashboardPage> {
                                 width: 180,
                                 decoration: BoxDecoration(
                                   color: isActive
-                                      ? AppColors.background
+                                      ? Theme.of(
+                                          context,
+                                        ).scaffoldBackgroundColor
                                       : Colors.white,
                                   border: Border(
                                     bottom: BorderSide(
                                       color: isActive
-                                          ? AppColors.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : Colors.transparent,
                                       width: 3,
                                     ),
@@ -248,7 +256,9 @@ class DashboardPageState extends State<DashboardPage> {
                                       tab.icon,
                                       size: 16,
                                       color: isActive
-                                          ? AppColors.primary
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
                                           : AppColors.textMuted,
                                     ),
                                     const SizedBox(width: 8),
@@ -257,7 +267,9 @@ class DashboardPageState extends State<DashboardPage> {
                                         tab.title,
                                         style: TextStyle(
                                           color: isActive
-                                              ? AppColors.textTitle
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.primary
                                               : AppColors.textMuted,
                                           fontWeight: isActive
                                               ? FontWeight.bold
@@ -318,67 +330,82 @@ class DashboardPageState extends State<DashboardPage> {
         leading: Icon(icon, color: Colors.white70),
         title: Text(title, style: const TextStyle(color: Colors.white70)),
         onTap: onTap,
-        hoverColor: Colors.white.withOpacity(0.1),
+        hoverColor: Colors.white.withValues(alpha: 0.1),
       ),
     );
   }
 
   // A Visão Geral (Dashboard) intacta
   Widget _buildVisaoGeral() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Visão Geral',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textTitle,
-              ),
-            ),
-            const SizedBox(height: 32),
-            // SUBSTITUÍMOS O ROW (LINHA FIXA) PELO WRAP (QUEBRA AUTOMÁTICA)
-            Wrap(
-              spacing: 24, // Espaçamento horizontal entre os cartões
-              runSpacing:
-                  24, // Espaçamento vertical (caso a tela encolha e eles desçam)
+    return Builder(
+      builder: (context) {
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildKpiCard(
-                  'Veículos Ativos',
-                  '12',
-                  Icons.local_shipping,
-                  AppColors.info,
+                const Text(
+                  'Visão Geral',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textTitle,
+                  ),
                 ),
-                _buildKpiCard(
-                  'Em Manutenção',
-                  '2',
-                  Icons.build,
-                  AppColors.warning,
-                ),
-                _buildKpiCard(
-                  'A Pagar (Mês)',
-                  'R\$ 14.500',
-                  Icons.arrow_downward,
-                  AppColors.error,
-                ),
-                _buildKpiCard(
-                  'A Receber (Mês)',
-                  'R\$ 32.800',
-                  Icons.arrow_upward,
-                  AppColors.success,
+                const SizedBox(height: 32),
+                // SUBSTITUÍMOS O ROW (LINHA FIXA) PELO WRAP (QUEBRA AUTOMÁTICA)
+                Wrap(
+                  spacing: 24, // Espaçamento horizontal entre os cartões
+                  runSpacing:
+                      24, // Espaçamento vertical (caso a tela encolha e eles desçam)
+                  children: [
+                    _buildKpiCard(
+                      context, // Passamos o context seguro do Builder!
+                      'Veículos Ativos',
+                      '12',
+                      Icons.local_shipping,
+                      AppColors.info,
+                    ),
+                    _buildKpiCard(
+                      context,
+                      'Em Manutenção',
+                      '2',
+                      Icons.build,
+                      AppColors.warning,
+                    ),
+                    _buildKpiCard(
+                      context,
+                      'A Pagar (Mês)',
+                      'R\$ 14.500',
+                      Icons.arrow_downward,
+                      AppColors.error,
+                    ),
+                    _buildKpiCard(
+                      context,
+                      'A Receber (Mês)',
+                      'R\$ 32.800',
+                      Icons.arrow_upward,
+                      AppColors.success,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
+  // CORREÇÃO: Adicionamos o BuildContext context como parâmetro obrigatório aqui
+  Widget _buildKpiCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       width: 220,
       padding: const EdgeInsets.all(20),

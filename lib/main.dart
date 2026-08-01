@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Usaremos o package base do flutter para Windows para definir o tamanho
 import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/core/theme/theme_cubit.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
@@ -64,26 +65,33 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (context, themeMode) {
+        builder: (context, mode) {
           return MaterialApp(
             title: 'WiaLog ERP',
             debugShowCheckedModeBanner: false,
-            themeMode: themeMode,
-            theme: ThemeData.light(useMaterial3: true).copyWith(
+            themeMode: mode,
+            theme: ThemeData(
+              brightness: Brightness.light,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF1E3A8A),
-                brightness: Brightness.light,
+                seedColor: AppColorsExt.light.sidebar,
               ),
-              scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+              useMaterial3: true,
+              fontFamily: 'Segoe UI',
+              scaffoldBackgroundColor: AppColorsExt.light.background,
+              extensions: const [AppColorsExt.light],
             ),
-            darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF1E3A8A),
+                seedColor: AppColorsExt.dark.sidebar,
                 brightness: Brightness.dark,
               ),
-              scaffoldBackgroundColor: const Color(0xFF121212),
+              useMaterial3: true,
+              fontFamily: 'Segoe UI',
+              scaffoldBackgroundColor: AppColorsExt.dark.background,
+              extensions: const [AppColorsExt.dark],
             ),
-            initialRoute: '/login',
+            initialRoute: '/',
             routes: {
               '/': (context) => const LoginPage(),
               '/dashboard': (context) => const DashboardPage(),
