@@ -53,7 +53,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+            colorScheme: ColorScheme.light(primary: context.appColors.primary),
           ),
           child: child!,
         );
@@ -110,21 +110,21 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                 height: 48,
                 child: OutlinedButton.icon(
                   onPressed: _pickDateRange,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.calendar_month,
-                    color: AppColors.primary,
+                    color: context.appColors.primary,
                   ),
                   label: Text(
                     _selectedDateRange == null
                         ? 'Filtrar Período'
                         : '${_selectedDateRange!.start.day.toString().padLeft(2, '0')}/${_selectedDateRange!.start.month.toString().padLeft(2, '0')} até ${_selectedDateRange!.end.day.toString().padLeft(2, '0')}/${_selectedDateRange!.end.month.toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: AppColors.primary),
+                    style: TextStyle(color: context.appColors.primary),
                   ),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    side: const BorderSide(color: AppColors.primary),
+                    side: BorderSide(color: context.appColors.primary),
                   ),
                 ),
               ),
@@ -134,7 +134,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: IconButton(
-                    icon: const Icon(Icons.clear, color: AppColors.error),
+                    icon: Icon(Icons.clear, color: context.appColors.error),
                     tooltip: 'Limpar Data',
                     onPressed: () => setState(() => _selectedDateRange = null),
                   ),
@@ -150,7 +150,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                   icon: const Icon(Icons.manage_search),
                   label: const Text('Buscar'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.appColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -180,7 +180,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                    backgroundColor: context.appColors.success,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -208,20 +208,20 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                     if (state is DocumentInitial ||
                         (state is DocumentLoaded &&
                             state.type != DocumentType.receivable)) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: AppColors.textMuted,
+                              color: context.appColors.textMuted,
                             ),
                             SizedBox(height: 16),
                             Text(
                               'Utilize os filtros acima e clique em "Buscar"',
                               style: TextStyle(
-                                color: AppColors.textMuted,
+                                color: context.appColors.textMuted,
                                 fontSize: 16,
                               ),
                             ),
@@ -236,17 +236,19 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is DocumentLoaded &&
                         state.type == DocumentType.receivable) {
                       if (state.documents.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhuma conta encontrada para este filtro.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
@@ -255,7 +257,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                         child: DataTable(
                           showCheckboxColumn: false,
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -346,23 +348,23 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
   }
 
   Widget _buildStatusChip(DocumentStatus status, DateTime dueDate) {
-    Color bgColor = AppColors.info.withValues(alpha: 0.1);
-    Color textColor = AppColors.info;
+    Color bgColor = context.appColors.info.withValues(alpha: 0.1);
+    Color textColor = context.appColors.info;
     String label = 'A Receber';
 
     if (status == DocumentStatus.paid) {
-      bgColor = AppColors.success.withValues(alpha: 0.1);
-      textColor = AppColors.success;
+      bgColor = context.appColors.success.withValues(alpha: 0.1);
+      textColor = context.appColors.success;
       label = 'Recebido';
     } else if (status == DocumentStatus.canceled) {
-      bgColor = Colors.grey.withValues(alpha: 0.1);
-      textColor = Colors.grey;
+      bgColor = context.appColors.textMuted.withValues(alpha: 0.1);
+      textColor = context.appColors.textMuted;
       label = 'Cancelado';
     } else if (dueDate.isBefore(
       DateTime.now().subtract(const Duration(days: 1)),
     )) {
-      bgColor = AppColors.error.withValues(alpha: 0.1);
-      textColor = AppColors.error;
+      bgColor = context.appColors.error.withValues(alpha: 0.1);
+      textColor = context.appColors.error;
       label = 'Atrasado';
     }
 

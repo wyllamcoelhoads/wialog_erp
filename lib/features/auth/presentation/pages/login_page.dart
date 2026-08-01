@@ -78,7 +78,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         );
                       } else if (state is AuthAuthenticated) {
-                        context.read<ThemeCubit>().setTheme(state.user.theme);
+                        context.read<ThemeCubit>().setThemeFromPreference(
+                          state.user.theme,
+                        );
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

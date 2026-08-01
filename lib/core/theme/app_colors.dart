@@ -12,6 +12,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
   final Color error;
   final Color warning;
   final Color info;
+  final Color primary;
 
   const AppColorsExt({
     required this.sidebar,
@@ -24,6 +25,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     required this.error,
     required this.warning,
     required this.info,
+    required this.primary,
   });
 
   static const light = AppColorsExt(
@@ -37,6 +39,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     error: Color(0xFFD32F2F),
     warning: Color(0xFFF57C00),
     info: Color(0xFF1976D2),
+    primary: Color(0xFF1976D2),
   );
 
   static const dark = AppColorsExt(
@@ -50,6 +53,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     error: Color(0xFFEF5350),
     warning: Color(0xFFFFA726),
     info: Color(0xFF42A5F5),
+    primary: Color(0xFF1976D2),
   );
 
   @override
@@ -64,6 +68,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     Color? error,
     Color? warning,
     Color? info,
+    Color? primary,
   }) {
     return AppColorsExt(
       sidebar: sidebar ?? this.sidebar,
@@ -76,6 +81,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
       error: error ?? this.error,
       warning: warning ?? this.warning,
       info: info ?? this.info,
+      primary: primary ?? this.primary,
     );
   }
 
@@ -84,6 +90,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     if (other is! AppColorsExt) return this;
     return AppColorsExt(
       sidebar: Color.lerp(sidebar, other.sidebar, t)!,
+      primary: Color.lerp(primary, other.primary, t)!,
       background: Color.lerp(background, other.background, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       textTitle: Color.lerp(textTitle, other.textTitle, t)!,

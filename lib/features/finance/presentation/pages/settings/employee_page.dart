@@ -53,7 +53,7 @@ class _EmployeePageState extends State<EmployeePage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: context.appColors.surface,
               title: Text(
                 isEditing ? 'Editar Funcionário' : 'Novo Funcionário',
               ),
@@ -136,11 +136,11 @@ class _EmployeePageState extends State<EmployeePage> {
                           const SizedBox(height: 16),
                           const Divider(),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'Dados da CNH',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: context.appColors.primary,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -259,7 +259,7 @@ class _EmployeePageState extends State<EmployeePage> {
                     }
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                    backgroundColor: context.appColors.success,
                   ),
                   child: Text(isEditing ? 'Atualizar' : 'Salvar'),
                 ),
@@ -283,7 +283,9 @@ class _EmployeePageState extends State<EmployeePage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<EmployeeBloc>().add(DeleteEmployee(employee.id));
               Navigator.of(ctx).pop();
@@ -304,14 +306,16 @@ class _EmployeePageState extends State<EmployeePage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isExpired
-            ? AppColors.error.withValues(alpha: 0.1)
-            : AppColors.success.withValues(alpha: 0.1),
+            ? context.appColors.error.withValues(alpha: 0.1)
+            : context.appColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         'Cat $category - Venc: ${expiration.day.toString().padLeft(2, '0')}/${expiration.month.toString().padLeft(2, '0')}/${expiration.year}',
         style: TextStyle(
-          color: isExpired ? AppColors.error : AppColors.success,
+          color: isExpired
+              ? context.appColors.error
+              : context.appColors.success,
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -322,7 +326,7 @@ class _EmployeePageState extends State<EmployeePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -331,7 +335,7 @@ class _EmployeePageState extends State<EmployeePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -339,28 +343,28 @@ class _EmployeePageState extends State<EmployeePage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
+                        color: context.appColors.textTitle,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Gerencie a equipe e valide o vencimento de CNH dos motoristas.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativos',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<EmployeeBloc>().add(
@@ -377,7 +381,7 @@ class _EmployeePageState extends State<EmployeePage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.appColors.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -393,9 +397,11 @@ class _EmployeePageState extends State<EmployeePage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: context.appColors.textMuted.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: BlocBuilder<EmployeeBloc, EmployeeState>(
                   builder: (context, state) {
@@ -406,16 +412,18 @@ class _EmployeePageState extends State<EmployeePage> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is EmployeeLoaded) {
                       if (state.employees.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhum funcionário encontrado.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
@@ -426,7 +434,7 @@ class _EmployeePageState extends State<EmployeePage> {
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(
-                              Theme.of(context).scaffoldBackgroundColor,
+                              context.appColors.background,
                             ),
                             columns: const [
                               DataColumn(
@@ -475,43 +483,31 @@ class _EmployeePageState extends State<EmployeePage> {
                                       children: [
                                         Text(
                                           emp.name,
-
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
-
                                             color: emp.isActive
-                                                ? Colors.black
-                                                : Colors.grey,
+                                                ? context.appColors.textBody
+                                                : context.appColors.textMuted,
                                           ),
                                         ),
-
                                         if (!emp.isActive) ...[
                                           const SizedBox(width: 8),
-
                                           Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 6,
-
                                               vertical: 2,
                                             ),
-
                                             decoration: BoxDecoration(
-                                              color: AppColors.error.withValues(
-                                                alpha: 0.1,
-                                              ),
-
+                                              color: context.appColors.error
+                                                  .withOpacity(0.1),
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),
-
-                                            child: const Text(
+                                            child: Text(
                                               'Inativo',
-
                                               style: TextStyle(
-                                                color: AppColors.error,
-
+                                                color: context.appColors.error,
                                                 fontSize: 10,
-
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -520,76 +516,59 @@ class _EmployeePageState extends State<EmployeePage> {
                                       ],
                                     ),
                                   ),
-
                                   DataCell(
                                     Text(
                                       displayCpf,
-
                                       style: TextStyle(
                                         color: emp.isActive
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? context.appColors.textBody
+                                            : context.appColors.textMuted,
                                       ),
                                     ),
                                   ),
-
                                   DataCell(
                                     Text(
                                       emp.roleName ?? '',
-
                                       style: TextStyle(
                                         color: emp.isActive
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? context.appColors.textBody
+                                            : context.appColors.textMuted,
                                       ),
                                     ),
                                   ),
-
                                   DataCell(
                                     emp.roleName?.toLowerCase() == 'motorista'
                                         ? _buildCNHChip(
                                             emp.licenseCategory,
-
                                             emp.licenseExpiration,
                                           )
                                         : const Text('-'),
                                   ),
-
                                   DataCell(
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
-
                                       children: [
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.edit,
-
-                                            color: AppColors.info,
-
+                                            color: context.appColors.info,
                                             size: 20,
                                           ),
-
                                           onPressed: () =>
                                               _showAddEmployeeDialog(
                                                 employee: emp,
                                               ),
-
                                           tooltip: 'Editar',
                                         ),
-
                                         if (emp.isActive)
                                           IconButton(
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.delete_outline,
-
-                                              color: AppColors.error,
-
+                                              color: context.appColors.error,
                                               size: 20,
                                             ),
-
                                             onPressed: () =>
                                                 _confirmDelete(emp),
-
                                             tooltip: 'Inativar',
                                           ),
                                       ],

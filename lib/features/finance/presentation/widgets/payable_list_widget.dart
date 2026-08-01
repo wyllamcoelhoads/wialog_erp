@@ -53,7 +53,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+            colorScheme: ColorScheme.light(primary: context.appColors.primary),
           ),
           child: child!,
         );
@@ -108,21 +108,21 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 height: 48,
                 child: OutlinedButton.icon(
                   onPressed: _pickDateRange,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.calendar_month,
-                    color: AppColors.primary,
+                    color: context.appColors.primary,
                   ),
                   label: Text(
                     _selectedDateRange == null
                         ? 'Filtrar Período'
                         : '${_selectedDateRange!.start.day.toString().padLeft(2, '0')}/${_selectedDateRange!.start.month.toString().padLeft(2, '0')} até ${_selectedDateRange!.end.day.toString().padLeft(2, '0')}/${_selectedDateRange!.end.month.toString().padLeft(2, '0')}',
-                    style: const TextStyle(color: AppColors.primary),
+                    style: TextStyle(color: context.appColors.primary),
                   ),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    side: const BorderSide(color: AppColors.primary),
+                    side: BorderSide(color: context.appColors.primary),
                   ),
                 ),
               ),
@@ -131,7 +131,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: IconButton(
-                    icon: const Icon(Icons.clear, color: AppColors.error),
+                    icon: Icon(Icons.clear, color: context.appColors.error),
                     tooltip: 'Limpar Data',
                     onPressed: () => setState(() => _selectedDateRange = null),
                   ),
@@ -146,7 +146,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                   icon: const Icon(Icons.manage_search),
                   label: const Text('Buscar'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.appColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -175,7 +175,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
+                    backgroundColor: context.appColors.error,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -202,20 +202,20 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                     if (state is DocumentInitial ||
                         (state is DocumentLoaded &&
                             state.type != DocumentType.payable)) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.search_off,
                               size: 64,
-                              color: AppColors.textMuted,
+                              color: context.appColors.textMuted,
                             ),
                             SizedBox(height: 16),
                             Text(
                               'Utilize os filtros acima e clique em "Buscar"',
                               style: TextStyle(
-                                color: AppColors.textMuted,
+                                color: context.appColors.textMuted,
                                 fontSize: 16,
                               ),
                             ),
@@ -230,17 +230,19 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is DocumentLoaded &&
                         state.type == DocumentType.payable) {
                       if (state.documents.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhuma conta a pagar encontrada.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
@@ -248,7 +250,7 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                         child: DataTable(
                           showCheckboxColumn: false,
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -334,23 +336,23 @@ class _PayableListWidgetState extends State<PayableListWidget> {
   }
 
   Widget _buildStatusChip(DocumentStatus status, DateTime dueDate) {
-    Color bgColor = AppColors.warning.withValues(alpha: 0.1);
-    Color textColor = AppColors.warning;
+    Color bgColor = context.appColors.warning.withValues(alpha: 0.1);
+    Color textColor = context.appColors.warning;
     String label = 'Pendente';
 
     if (status == DocumentStatus.paid) {
-      bgColor = AppColors.success.withValues(alpha: 0.1);
-      textColor = AppColors.success;
+      bgColor = context.appColors.success.withValues(alpha: 0.1);
+      textColor = context.appColors.success;
       label = 'Pago';
     } else if (status == DocumentStatus.canceled) {
-      bgColor = Colors.grey.withValues(alpha: 0.1);
-      textColor = Colors.grey;
+      bgColor = context.appColors.textMuted.withValues(alpha: 0.1);
+      textColor = context.appColors.textMuted;
       label = 'Cancelado';
     } else if (dueDate.isBefore(
       DateTime.now().subtract(const Duration(days: 1)),
     )) {
-      bgColor = AppColors.error.withValues(alpha: 0.1);
-      textColor = AppColors.error;
+      bgColor = context.appColors.error.withValues(alpha: 0.1);
+      textColor = context.appColors.error;
       label = 'Atrasado';
     }
 

@@ -75,7 +75,7 @@ class PreferencesPage extends StatelessWidget {
                             ? Icons.dark_mode
                             : Icons.light_mode,
                         size: 32,
-                        color: AppColors.primary,
+                        color: context.appColors.primary,
                       ),
                       title: Text(
                         'Modo Escuro (Dark Mode)',
@@ -89,7 +89,7 @@ class PreferencesPage extends StatelessWidget {
                       ),
                       trailing: Switch(
                         value: context.watch<ThemeCubit>().isDark,
-                        activeThumbColor: AppColors.primary,
+                        activeThumbColor: context.appColors.primary,
                         onChanged: (val) {
                           // 1. Troca a cor na tela imediatamente
                           context.read<ThemeCubit>().toggleTheme();
@@ -143,9 +143,9 @@ class PreferencesPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.shield,
-                          color: AppColors.success,
+                          color: context.appColors.success,
                           size: 40,
                         ),
                         const SizedBox(width: 16),
@@ -179,20 +179,24 @@ class PreferencesPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: context.appColors.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.admin_panel_settings,
-                              color: AppColors.primary,
+                              color: context.appColors.primary,
                             ),
                             SizedBox(width: 16),
                             Expanded(
                               child: Text(
                                 'Você possui o perfil de Administrador. Suas permissões não podem ser restritas, você tem acesso irrestrito a todas as configurações de negócio da plataforma.',
-                                style: TextStyle(color: AppColors.primary),
+                                style: TextStyle(
+                                  color: context.appColors.primary,
+                                ),
                               ),
                             ),
                           ],
@@ -202,20 +206,24 @@ class PreferencesPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.1),
+                          color: context.appColors.warning.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.lock_person,
-                              color: AppColors.warning,
+                              color: context.appColors.warning,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Text(
                                 'As suas permissões foram herdadas do seu cargo. Se houver alguma configuração avançada liberada apenas para sua conta, ela irá sobrescrever as regras do cargo.',
-                                style: TextStyle(color: Colors.orange.shade800),
+                                style: TextStyle(
+                                  color: context.appColors.warning,
+                                ),
                               ),
                             ),
                           ],

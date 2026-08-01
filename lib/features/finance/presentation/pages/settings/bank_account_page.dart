@@ -62,7 +62,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: AppColors.background,
+          backgroundColor: context.appColors.background,
           title: Text(
             isEditing
                 ? 'Editar Conta Bancária / Caixa'
@@ -215,7 +215,9 @@ class _BankAccountPageState extends State<BankAccountPage> {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.success,
+              ),
               child: Text(isEditing ? 'Atualizar Conta' : 'Salvar Conta'),
             ),
           ],
@@ -238,7 +240,9 @@ class _BankAccountPageState extends State<BankAccountPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<BankAccountBloc>().add(
                 DeleteBankAccount(account.id),
@@ -255,7 +259,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -264,7 +268,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -272,7 +276,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
+                        color: context.appColors.textTitle,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -280,20 +284,20 @@ class _BankAccountPageState extends State<BankAccountPage> {
                       'Gerencie os locais onde o dinheiro da empresa está guardado.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativas',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeThumbColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<BankAccountBloc>().add(
@@ -310,7 +314,7 @@ class _BankAccountPageState extends State<BankAccountPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.appColors.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -339,23 +343,25 @@ class _BankAccountPageState extends State<BankAccountPage> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is BankAccountLoaded) {
                       if (state.accounts.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhuma conta encontrada.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -436,17 +442,16 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.error.withOpacity(
-                                              0.1,
-                                            ),
+                                            color: context.appColors.error
+                                                .withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               4,
                                             ),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'Inativa',
                                             style: TextStyle(
-                                              color: AppColors.error,
+                                              color: context.appColors.error,
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -483,8 +488,8 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                       color: !acc.isActive
                                           ? Colors.grey
                                           : (acc.currentBalance < 0
-                                                ? AppColors.error
-                                                : AppColors.success),
+                                                ? context.appColors.error
+                                                : context.appColors.success),
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -494,9 +499,9 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.edit,
-                                          color: AppColors.info,
+                                          color: context.appColors.info,
                                           size: 20,
                                         ),
                                         onPressed: () =>
@@ -506,9 +511,9 @@ class _BankAccountPageState extends State<BankAccountPage> {
                                       if (acc
                                           .isActive) // Só exibe Lixeira se estiver ativa
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.delete_outline,
-                                            color: AppColors.error,
+                                            color: context.appColors.error,
                                             size: 20,
                                           ),
                                           onPressed: () => _confirmDelete(acc),

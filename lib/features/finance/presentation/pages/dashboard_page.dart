@@ -103,7 +103,7 @@ class DashboardPageState extends State<DashboardPage> {
           // ==============================
           Container(
             width: 250,
-            color: AppColors.sidebar,
+            color: context.appColors.sidebar,
             child: Column(
               children: [
                 const SizedBox(height: 40),
@@ -259,7 +259,7 @@ class DashboardPageState extends State<DashboardPage> {
                                           ? Theme.of(
                                               context,
                                             ).colorScheme.primary
-                                          : AppColors.textMuted,
+                                          : context.appColors.textMuted,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -270,7 +270,7 @@ class DashboardPageState extends State<DashboardPage> {
                                               ? Theme.of(
                                                   context,
                                                 ).colorScheme.primary
-                                              : AppColors.textMuted,
+                                              : context.appColors.textMuted,
                                           fontWeight: isActive
                                               ? FontWeight.bold
                                               : FontWeight.normal,
@@ -284,7 +284,7 @@ class DashboardPageState extends State<DashboardPage> {
                                         icon: const Icon(Icons.close, size: 16),
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
-                                        color: AppColors.textMuted,
+                                        color: context.appColors.textMuted,
                                         onHover: (hovering) {},
                                         onPressed: () => closeTab(
                                           index,
@@ -345,12 +345,12 @@ class DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Visão Geral',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textTitle,
+                    color: context.appColors.textTitle,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -365,28 +365,28 @@ class DashboardPageState extends State<DashboardPage> {
                       'Veículos Ativos',
                       '12',
                       Icons.local_shipping,
-                      AppColors.info,
+                      context.appColors.info,
                     ),
                     _buildKpiCard(
                       context,
                       'Em Manutenção',
                       '2',
                       Icons.build,
-                      AppColors.warning,
+                      context.appColors.warning,
                     ),
                     _buildKpiCard(
                       context,
                       'A Pagar (Mês)',
                       'R\$ 14.500',
                       Icons.arrow_downward,
-                      AppColors.error,
+                      context.appColors.error,
                     ),
                     _buildKpiCard(
                       context,
                       'A Receber (Mês)',
                       'R\$ 32.800',
                       Icons.arrow_upward,
-                      AppColors.success,
+                      context.appColors.success,
                     ),
                   ],
                 ),
@@ -428,8 +428,8 @@ class DashboardPageState extends State<DashboardPage> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: context.appColors.textMuted,
                   fontSize: 14,
                 ),
               ),

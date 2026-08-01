@@ -90,7 +90,9 @@ class _RolePageState extends State<RolePage> {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.success,
+              ),
               child: Text(isEditing ? 'Atualizar' : 'Salvar'),
             ),
           ],
@@ -102,9 +104,9 @@ class _RolePageState extends State<RolePage> {
   void _confirmDelete(RoleEntity role) {
     if (role.name.toLowerCase() == 'administrador') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Você não pode inativar o cargo de Administrador.'),
-          backgroundColor: AppColors.error,
+          backgroundColor: context.appColors.error,
         ),
       );
       return;
@@ -123,7 +125,9 @@ class _RolePageState extends State<RolePage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<RoleBloc>().add(DeleteRole(role.id));
               Navigator.of(ctx).pop();
@@ -138,7 +142,7 @@ class _RolePageState extends State<RolePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -147,7 +151,7 @@ class _RolePageState extends State<RolePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -155,7 +159,7 @@ class _RolePageState extends State<RolePage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
+                        color: context.appColors.textTitle,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -163,20 +167,20 @@ class _RolePageState extends State<RolePage> {
                       'Cadastre os cargos da empresa para gerenciar acessos futuros.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativos',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeThumbColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<RoleBloc>().add(
@@ -193,7 +197,7 @@ class _RolePageState extends State<RolePage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.appColors.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -222,23 +226,25 @@ class _RolePageState extends State<RolePage> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is RoleLoaded) {
                       if (state.roles.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhum cargo encontrado.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -299,17 +305,16 @@ class _RolePageState extends State<RolePage> {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.error.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                            color: context.appColors.error
+                                                .withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               4,
                                             ),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'Inativo',
                                             style: TextStyle(
-                                              color: AppColors.error,
+                                              color: context.appColors.error,
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -334,9 +339,9 @@ class _RolePageState extends State<RolePage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.edit,
-                                          color: AppColors.info,
+                                          color: context.appColors.info,
                                           size: 20,
                                         ),
                                         onPressed: () =>
@@ -347,9 +352,9 @@ class _RolePageState extends State<RolePage> {
                                           role.name.toLowerCase() !=
                                               'administrador')
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.delete_outline,
-                                            color: AppColors.error,
+                                            color: context.appColors.error,
                                             size: 20,
                                           ),
                                           onPressed: () => _confirmDelete(role),

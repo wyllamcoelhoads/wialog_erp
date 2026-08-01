@@ -15,7 +15,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: context.appColors.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -26,17 +26,18 @@ class SettingsPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: context.appColors.textTitle,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Gerencie as preferências, usuários e tabelas auxiliares do ERP.',
-              style: TextStyle(fontSize: 16, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 16,
+                color: context.appColors.textMuted,
+              ),
             ),
             const SizedBox(height: 32),
-
-            // Grid Responsivo de Cartões de Configuração
             Wrap(
               spacing: 24,
               runSpacing: 24,
@@ -156,7 +157,7 @@ class SettingsPage extends StatelessWidget {
                   title: 'Permissões e Preferências',
                   subtitle:
                       'Altere seu tema (Dark Mode) e visualize seus acessos.',
-                  icon: Icons.tune, // Ícone legal de ajustes
+                  icon: Icons.tune,
                   onTap: () {
                     DashboardPage.of(context).openTab(
                       WorkspaceTab(
@@ -190,12 +191,14 @@ class SettingsPage extends StatelessWidget {
         width: 320,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: context.appColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(
+            color: context.appColors.textMuted.withValues(alpha: 0.2),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -207,14 +210,10 @@ class SettingsPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.appColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                size: 32,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-              ),
+              child: Icon(icon, size: 32, color: context.appColors.primary),
             ),
             const SizedBox(height: 20),
             Text(
@@ -222,13 +221,16 @@ class SettingsPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: context.appColors.textTitle,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.appColors.textMuted,
+              ),
             ),
           ],
         ),
