@@ -29,8 +29,8 @@ class RolePostgresDataSource implements RoleDataSource {
   @override
   Future<RoleModel> createRole(RoleModel role) async {
     const sql = '''
-      INSERT INTO roles (name, description, is_active)
-      VALUES (@name, @description, @is_active)
+      INSERT INTO roles (name, description, permissions, is_active)
+      VALUES (@name, @description, @permissions, @is_active)
       RETURNING *;
     ''';
     final params = role.toMap();
@@ -43,7 +43,7 @@ class RolePostgresDataSource implements RoleDataSource {
   Future<RoleModel> updateRole(RoleModel role) async {
     const sql = '''
       UPDATE roles 
-      SET name = @name, description = @description, is_active = @is_active
+      SET name = @name, description = @description, permissions = @permissions, is_active = @is_active
       WHERE id = @id
       RETURNING *;
     ''';

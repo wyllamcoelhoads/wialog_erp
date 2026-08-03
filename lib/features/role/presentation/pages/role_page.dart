@@ -29,6 +29,16 @@ class _RolePageState extends State<RolePage> {
     final nameController = TextEditingController(text: role?.name ?? '');
     final descController = TextEditingController(text: role?.description ?? '');
 
+    final Map<String, String> availablePermissions = {
+      'dashboard': 'Visão Geral (Dashboard)',
+      'fleet': 'Frotas e Manutenções',
+      'finance': 'Módulo Financeiro (Caixa, Contas)',
+      'settings': 'Configurações Gerais',
+      'users': 'Gestão de Usuários e Acessos',
+    };
+
+    Map<String, bool> currentPermissions = Map.from(role?.permissions ?? {});
+
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -58,10 +68,58 @@ class _RolePageState extends State<RolePage> {
                     controller: descController,
                     maxLines: 2,
                     decoration: const InputDecoration(
-                      labelText: 'Descrição / Futuras Permissões',
+                      labelText: 'Descrição',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.description_outlined),
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Permissões de Acesso aos Módulos',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: context.appColors.textTitle,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Defina quais áreas do sistema os funcionários com este cargo poderão acessar.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.appColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    children: availablePermissions.entries.map((entry) {
+                      final isAllowed = currentPermissions[entry.key] ?? false;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              entry.value,
+                              style: TextStyle(
+                                color: context.appColors.textBody,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Checkbox(
+                              value: isAllowed,
+                              onChanged: (val) {
+                                setState(() {
+                                  currentPermissions[entry.key] = val ?? false;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -79,6 +137,7 @@ class _RolePageState extends State<RolePage> {
                     id: role?.id ?? 0,
                     name: nameController.text.trim(),
                     description: descController.text.trim(),
+                    permissions: currentPermissions,
                     isActive: role?.isActive ?? true,
                   );
 
