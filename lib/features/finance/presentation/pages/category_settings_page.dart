@@ -14,27 +14,26 @@ class CategorySettingsPage extends StatefulWidget {
   State<CategorySettingsPage> createState() => _CategorySettingsPageState();
 }
 
-// O mixin TickerProvider é obrigatório para usar TabController
 class _CategorySettingsPageState extends State<CategorySettingsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // VARIÁVEL CRUCIAL QUE CONTROLA O BOTÃO
   bool _showInactive = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // Escuta a troca de abas para recarregar as categorias correspondentes
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        setState(
-          () {},
-        ); // <--- CORREÇÃO: Força o botão e os textos a se atualizarem!
+        setState(() {});
         _loadCategories();
       }
     });
 
-    _loadCategories(); // Carrega a primeira aba logo de cara
+    _loadCategories();
   }
 
   @override
@@ -43,7 +42,6 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
     super.dispose();
   }
 
-  // Helpers para descobrir qual aba está ativa
   CategoryType get _currentType {
     if (_tabController.index == 0) return CategoryType.supplier;
     if (_tabController.index == 1) return CategoryType.receivable;
@@ -57,6 +55,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
   }
 
   void _loadCategories() {
+    // O SEGREDO ESTÁ AQUI: Agora mandamos o estado do botão para o BLoC!
     context.read<CategoryBloc>().add(
       LoadCategories(type: _currentType, includeInactive: _showInactive),
     );
@@ -66,7 +65,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
     final isEditing = category != null;
     final nameController = TextEditingController(text: category?.name ?? '');
     final formKey = GlobalKey<FormState>();
-    final typeToSave = _currentType; // Trava o tipo baseado na aba atual
+    final typeToSave = _currentType;
 
     showDialog(
       context: context,
@@ -107,6 +106,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                     id: category?.id ?? 0,
                     name: nameController.text.trim(),
                     type: typeToSave,
+                    // Garante que não reativemos a categoria sem querer ao editar o nome dela
                     isActive: category?.isActive ?? true,
                   );
 
@@ -118,7 +118,9 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                   Navigator.of(dialogContext).pop();
                 }
               },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.primary,
+              ),
               child: const Text('Salvar'),
             ),
           ],
@@ -142,7 +144,9 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<CategoryBloc>().add(
                 DeleteCategory(category.id, typeToSave),
@@ -159,7 +163,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -169,23 +173,23 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Gestão de Categorias',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textTitle,
+                    color: context.appColors.textTitle,
                   ),
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativas',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         _loadCategories();
@@ -200,7 +204,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                         style: const TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
+                        backgroundColor: context.appColors.success,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -215,12 +219,12 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
 
             // ABAS DE NAVEGAÇÃO
             Container(
-              color: Colors.white,
+              color: context.appColors.surface,
               child: TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textMuted,
-                indicatorColor: AppColors.primary,
+                labelColor: context.appColors.primary,
+                unselectedLabelColor: context.appColors.textMuted,
+                indicatorColor: context.appColors.primary,
                 indicatorWeight: 3,
                 tabs: const [
                   Tab(
@@ -239,12 +243,14 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surface,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(8),
                     bottomRight: Radius.circular(8),
                   ),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: context.appColors.textMuted.withOpacity(0.2),
+                  ),
                 ),
                 child: BlocBuilder<CategoryBloc, CategoryState>(
                   builder: (context, state) {
@@ -255,23 +261,27 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is CategoryLoaded) {
                       if (state.categories.isEmpty) {
-                        return const Center(
+                        // Se não houver nada, mostra essa mensagem
+                        return Center(
                           child: Text(
                             'Nenhuma categoria encontrada.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                              fontSize: 16,
+                            ),
                           ),
                         );
                       }
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -302,8 +312,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                         cat.id.toString(),
                                         style: TextStyle(
                                           color: cat.isActive
-                                              ? Colors.black
-                                              : Colors.grey,
+                                              ? context.appColors.textBody
+                                              : context.appColors.textMuted,
                                         ),
                                       ),
                                     ),
@@ -315,8 +325,8 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               color: cat.isActive
-                                                  ? Colors.black
-                                                  : Colors.grey,
+                                                  ? context.appColors.textBody
+                                                  : context.appColors.textMuted,
                                             ),
                                           ),
                                           if (!cat.isActive) ...[
@@ -328,15 +338,16 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                                     vertical: 2,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: AppColors.error
-                                                    .withValues(alpha: 0.1),
+                                                color: context.appColors.error
+                                                    .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
-                                              child: const Text(
+                                              child: Text(
                                                 'Inativa',
                                                 style: TextStyle(
-                                                  color: AppColors.error,
+                                                  color:
+                                                      context.appColors.error,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -351,9 +362,9 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.edit,
-                                              color: AppColors.info,
+                                              color: context.appColors.info,
                                               size: 20,
                                             ),
                                             onPressed: () =>
@@ -362,11 +373,12 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                                                 ),
                                             tooltip: 'Editar',
                                           ),
-                                          if (cat.isActive)
+                                          if (cat
+                                              .isActive) // Só exibe lixeira se estiver ativa
                                             IconButton(
-                                              icon: const Icon(
+                                              icon: Icon(
                                                 Icons.delete_outline,
-                                                color: AppColors.error,
+                                                color: context.appColors.error,
                                                 size: 20,
                                               ),
                                               onPressed: () =>

@@ -89,23 +89,23 @@ class _ClientFormPageState extends State<ClientFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
         title: Text(
           _isEditing ? 'Editar Cliente' : 'Cadastro de Cliente',
-          style: const TextStyle(
-            color: AppColors.textTitle,
+          style: TextStyle(
+            color: context.appColors.textTitle,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           if (_isEditing)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              icon: Icon(Icons.delete_outline, color: context.appColors.error),
               tooltip: 'Excluir Cliente',
               onPressed: () {
                 context.read<PartnerBloc>().add(
@@ -124,7 +124,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppColors.error,
+                backgroundColor: context.appColors.error,
               ),
             );
           } else if (state is PartnerLoaded && _isSaving) {
@@ -136,7 +136,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                       ? 'Cliente atualizado com sucesso!'
                       : 'Cliente salvo com sucesso!',
                 ),
-                backgroundColor: AppColors.success,
+                backgroundColor: context.appColors.success,
               ),
             );
             _closeTab(context);
@@ -154,11 +154,15 @@ class _ClientFormPageState extends State<ClientFormPage> {
                   children: [
                     _buildSectionTitle('1. Identificação'),
                     Card(
-                      color: Colors.white,
+                      color: context.appColors.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.2,
+                          ),
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -251,11 +255,14 @@ class _ClientFormPageState extends State<ClientFormPage> {
                             children: [
                               _buildSectionTitle('2. Contato Principal'),
                               Card(
-                                color: Colors.white,
+                                color: context.appColors.surface,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade200),
+                                  side: BorderSide(
+                                    color: context.appColors.textMuted
+                                        .withValues(alpha: 0.2),
+                                  ),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(24.0),
@@ -287,11 +294,14 @@ class _ClientFormPageState extends State<ClientFormPage> {
                             children: [
                               _buildSectionTitle('3. Endereço e Faturamento'),
                               Card(
-                                color: Colors.white,
+                                color: context.appColors.surface,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade200),
+                                  side: BorderSide(
+                                    color: context.appColors.textMuted
+                                        .withValues(alpha: 0.2),
+                                  ),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(24.0),
@@ -378,7 +388,7 @@ class _ClientFormPageState extends State<ClientFormPage> {
                               horizontal: 32,
                               vertical: 16,
                             ),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.appColors.primary,
                           ),
                         ),
                       ],
@@ -398,15 +408,13 @@ class _ClientFormPageState extends State<ClientFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
-    // NOVO: Pega o texto do controlador e remove tudo que não for número
-    final rawDocument = _docController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     final client = PartnerEntity(
       id: _isEditing
           ? widget.partner!.id
           : (100000 + Random().nextInt(899999)).toString(),
       name: _nameController.text,
-      document: rawDocument, // Salva apenas os números
+      document: _docMask.getUnmaskedText(), // Salva sem pontuação
       type: PartnerType.client,
       contact: _phoneController.text.isNotEmpty
           ? _phoneController.text
@@ -438,10 +446,10 @@ class _ClientFormPageState extends State<ClientFormPage> {
       padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: AppColors.textTitle,
+          color: context.appColors.textTitle,
         ),
       ),
     );

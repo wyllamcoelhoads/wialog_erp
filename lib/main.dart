@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Usaremos o package base do flutter para Windows para definir o tamanho
 import 'package:desktop_window/desktop_window.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
+import 'package:wialog_erp/core/theme/theme_cubit.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
@@ -14,7 +16,6 @@ import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.da
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import 'dart:io' show Platform;
 
-import 'core/theme/app_colors.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'core/di/service_locator.dart';
 import 'features/finance/presentation/bloc/partner/partner_bloc.dart';
@@ -61,20 +62,41 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<EmployeeBloc>(create: (context) => sl<EmployeeBloc>()),
         BlocProvider<UserBloc>(create: (context) => sl<UserBloc>()),
         BlocProvider<RoleBloc>(create: (context) => sl<RoleBloc>()),
+        BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
       ],
-      child: MaterialApp(
-        title: 'WiaLog ERP',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-          useMaterial3: true,
-          fontFamily: 'Segoe UI',
-        ),
-        // TABELA DE ROTAS: Isso resolve o erro de navegação entre telas!
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const LoginPage(),
-          '/dashboard': (context) => const DashboardPage(),
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, mode) {
+          return MaterialApp(
+            title: 'WiaLog ERP',
+            debugShowCheckedModeBanner: false,
+            themeMode: mode,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColorsExt.light.sidebar,
+              ),
+              useMaterial3: true,
+              fontFamily: 'Segoe UI',
+              scaffoldBackgroundColor: AppColorsExt.light.background,
+              extensions: const [AppColorsExt.light],
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: AppColorsExt.dark.sidebar,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              fontFamily: 'Segoe UI',
+              scaffoldBackgroundColor: AppColorsExt.dark.background,
+              extensions: const [AppColorsExt.dark],
+            ),
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const LoginPage(),
+              '/dashboard': (context) => const DashboardPage(),
+            },
+          );
         },
       ),
     );

@@ -124,11 +124,11 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         _selectedCategoryId == null ||
         _selectedPartnerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Preencha as Informações Principais antes de gerar parcelas.',
           ),
-          backgroundColor: AppColors.error,
+          backgroundColor: context.appColors.error,
         ),
       );
       return;
@@ -196,7 +196,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+            colorScheme: ColorScheme.light(primary: context.appColors.primary),
           ),
           child: child!,
         );
@@ -246,16 +246,16 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
               : 'Novo Lançamento (Despesa)');
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
         title: Text(
           pageTitle,
-          style: const TextStyle(
-            color: AppColors.textTitle,
+          style: TextStyle(
+            color: context.appColors.textTitle,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -267,15 +267,15 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppColors.error,
+                backgroundColor: context.appColors.error,
               ),
             );
           } else if (state is DocumentLoaded && _isSaving) {
             setState(() => _isSaving = false);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Documentos salvos com sucesso!'),
-                backgroundColor: AppColors.success,
+              SnackBar(
+                content: const Text('Documentos salvos com sucesso!'),
+                backgroundColor: context.appColors.success,
               ),
             );
             _closeTab(context);
@@ -291,14 +291,16 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // INFORMAÇÕES PRINCIPAIS (Inalteradas visualmente, cortado para brevidade mas você mantém seu Card atual)
+                    // INFORMAÇÕES PRINCIPAIS
                     _buildSectionTitle('Informações Principais'),
                     Card(
-                      color: Colors.white,
+                      color: context.appColors.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(
+                          color: context.appColors.textMuted.withOpacity(0.2),
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -353,8 +355,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                   c.id == _selectedCategoryId,
                                             );
                                         return DropdownButtonFormField<int>(
-                                          isExpanded: true,
-                                          initialValue: exists
+                                          isExpanded:
+                                              true, // <-- MUDANÇA AQUI: Evita quebra de tela
+                                          value: exists
                                               ? _selectedCategoryId
                                               : null,
                                           decoration: const InputDecoration(
@@ -375,7 +378,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                   ),
                                                 ),
                                               )
-                                              .toList(),
+                                              .toList(), // <-- MUDANÇA AQUI: Adiciona os ...
                                           onChanged: (val) => setState(
                                             () => _selectedCategoryId = val,
                                           ),
@@ -397,8 +400,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                           (p) => p.id == _selectedPartnerId,
                                         );
                                         return DropdownButtonFormField<String>(
-                                          isExpanded: true,
-                                          initialValue: exists
+                                          isExpanded: true, // <-- MUDANÇA AQUI
+                                          value: exists
                                               ? _selectedPartnerId
                                               : null,
                                           decoration: InputDecoration(
@@ -421,7 +424,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                   ),
                                                 ),
                                               )
-                                              .toList(),
+                                              .toList(), // <-- MUDANÇA AQUI
                                           onChanged: (val) => setState(
                                             () => _selectedPartnerId = val,
                                           ),
@@ -454,7 +457,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                             ? 'Selecionar'
                                             : '${_selectedDueDate!.day.toString().padLeft(2, '0')}/${_selectedDueDate!.month.toString().padLeft(2, '0')}/${_selectedDueDate!.year}',
                                         overflow: TextOverflow.ellipsis,
-                                      ),
+                                      ), // <-- MUDANÇA AQUI
                                     ),
                                   ),
                                 ),
@@ -470,11 +473,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                     if (!_isEditing) ...[
                       _buildSectionTitle('Geração de Parcelas'),
                       Card(
-                        color: Colors.white,
+                        color: context.appColors.surface,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
+                          side: BorderSide(
+                            color: context.appColors.textMuted.withOpacity(0.2),
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(24.0),
@@ -494,8 +499,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                   const SizedBox(width: 24),
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      isExpanded: true,
-                                      initialValue: _installmentInterval,
+                                      isExpanded: true, // <-- MUDANÇA AQUI
+                                      value: _installmentInterval,
                                       decoration: const InputDecoration(
                                         labelText: 'Intervalo',
                                         prefixIcon: Icon(Icons.update),
@@ -518,7 +523,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                   ),
                                                 ),
                                               )
-                                              .toList(),
+                                              .toList(), // <-- MUDANÇA AQUI
                                       onChanged: (val) => setState(
                                         () => _installmentInterval = val!,
                                       ),
@@ -539,7 +544,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                           style: TextStyle(color: Colors.white),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.info,
+                                          backgroundColor:
+                                              context.appColors.info,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               8,
@@ -556,10 +562,10 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 const SizedBox(height: 24),
                                 const Divider(),
                                 const SizedBox(height: 8),
-                                const Text(
+                                Text(
                                   'Confirme ou altere as datas antes de salvar:',
                                   style: TextStyle(
-                                    color: AppColors.textMuted,
+                                    color: context.appColors.textMuted,
                                     fontStyle: FontStyle.italic,
                                   ),
                                 ),
@@ -567,20 +573,19 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 Container(
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: Colors.grey.shade300,
+                                      color: context.appColors.textMuted
+                                          .withOpacity(0.2),
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: DataTable(
                                     headingRowColor: WidgetStateProperty.all(
-                                      AppColors.background,
+                                      context.appColors.background,
                                     ),
                                     columns: const [
                                       DataColumn(label: Text('Documento')),
                                       DataColumn(label: Text('Descrição')),
-                                      DataColumn(
-                                        label: Text('Valor Total (R\$)'),
-                                      ),
+                                      DataColumn(label: Text('Valor (R\$)')),
                                       DataColumn(
                                         label: Text(
                                           'Vencimento (Clique p/ Editar)',
@@ -620,17 +625,21 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                                 children: [
                                                   Text(
                                                     dateStr,
-                                                    style: const TextStyle(
-                                                      color: AppColors.primary,
+                                                    style: TextStyle(
+                                                      color: context
+                                                          .appColors
+                                                          .primary,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
-                                                  const Icon(
+                                                  Icon(
                                                     Icons.edit_calendar,
                                                     size: 16,
-                                                    color: AppColors.primary,
+                                                    color: context
+                                                        .appColors
+                                                        .primary,
                                                   ),
                                                 ],
                                               ),
@@ -651,11 +660,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
 
                     _buildSectionTitle('Observações Adicionais'),
                     Card(
-                      color: Colors.white,
+                      color: context.appColors.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(
+                          color: context.appColors.textMuted.withOpacity(0.2),
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -693,8 +704,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                               vertical: 16,
                             ),
                             backgroundColor: widget.isReceivable
-                                ? AppColors.success
-                                : AppColors.error,
+                                ? context.appColors.success
+                                : context.appColors.error,
                           ),
                         ),
                       ],
@@ -716,9 +727,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         _selectedCategoryId == null ||
         _selectedPartnerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Preencha os campos obrigatórios.'),
-          backgroundColor: AppColors.warning,
+        SnackBar(
+          content: const Text('Preencha os campos obrigatórios.'),
+          backgroundColor: context.appColors.warning,
         ),
       );
       return;
@@ -727,11 +738,24 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     // Trava de segurança: Se for cadastro novo, obriga a gerar a preview antes de salvar
     if (!_isEditing && _previewInstallments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
+          content: const Text(
+            'Por favor, clique em "Gerar Previsão" antes de salvar.',
+          ),
+          backgroundColor: context.appColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Trava de segurança: Se for cadastro novo, obriga a gerar a preview antes de salvar
+    if (!_isEditing && _previewInstallments.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text(
             'Por favor, clique em "Gerar Previsão" antes de salvar.',
           ),
-          backgroundColor: AppColors.error,
+          backgroundColor: context.appColors.error,
         ),
       );
       return;
@@ -796,10 +820,10 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: AppColors.textTitle,
+          color: context.appColors.textTitle,
         ),
       ),
     );
@@ -826,7 +850,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         labelText: label,
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
-        fillColor: readOnly ? Colors.grey.shade100 : null,
+        fillColor: readOnly
+            ? context.appColors.textMuted.withOpacity(0.05)
+            : null,
         filled: readOnly,
       ),
       validator: isRequired

@@ -33,7 +33,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surface,
           title: Text(
             isEditing ? 'Editar Forma de Pagamento' : 'Nova Forma de Pagamento',
           ),
@@ -79,7 +79,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.success,
+              ),
               child: Text(isEditing ? 'Atualizar' : 'Salvar'),
             ),
           ],
@@ -102,7 +104,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<PaymentMethodBloc>().add(
                 DeletePaymentMethod(method.id),
@@ -119,7 +123,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -128,7 +132,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -136,28 +140,28 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
+                        color: context.appColors.textTitle,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Cadastre os meios de pagamento aceitos pela empresa.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativas',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<PaymentMethodBloc>().add(
@@ -174,7 +178,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.appColors.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -190,9 +194,11 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: context.appColors.textMuted.withOpacity(0.2),
+                  ),
                 ),
                 child: BlocBuilder<PaymentMethodBloc, PaymentMethodState>(
                   builder: (context, state) {
@@ -203,23 +209,25 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is PaymentMethodLoaded) {
                       if (state.methods.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhuma forma de pagamento encontrada.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            AppColors.background,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(
@@ -249,8 +257,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                     method.id.toString(),
                                     style: TextStyle(
                                       color: method.isActive
-                                          ? Colors.black
-                                          : Colors.grey,
+                                          ? context.appColors.textBody
+                                          : context.appColors.textMuted,
                                     ),
                                   ),
                                 ),
@@ -262,8 +270,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: method.isActive
-                                              ? Colors.black
-                                              : Colors.grey,
+                                              ? context.appColors.textBody
+                                              : context.appColors.textMuted,
                                         ),
                                       ),
                                       if (!method.isActive) ...[
@@ -274,17 +282,16 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.error.withValues(
-                                              alpha: 0.1,
-                                            ),
+                                            color: context.appColors.error
+                                                .withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(
                                               4,
                                             ),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'Inativo',
                                             style: TextStyle(
-                                              color: AppColors.error,
+                                              color: context.appColors.error,
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -299,9 +306,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       IconButton(
-                                        icon: const Icon(
+                                        icon: Icon(
                                           Icons.edit,
-                                          color: AppColors.info,
+                                          color: context.appColors.info,
                                           size: 20,
                                         ),
                                         onPressed: () => _showAddMethodDialog(
@@ -311,9 +318,9 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                                       ),
                                       if (method.isActive)
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.delete_outline,
-                                            color: AppColors.error,
+                                            color: context.appColors.error,
                                             size: 20,
                                           ),
                                           onPressed: () =>

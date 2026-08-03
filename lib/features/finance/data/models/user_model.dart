@@ -10,6 +10,8 @@ class UserModel extends UserEntity {
     required super.roleId,
     super.roleName,
     super.isActive,
+    super.theme,
+    super.customPermissions,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -22,6 +24,8 @@ class UserModel extends UserEntity {
       roleId: map['role_id'],
       roleName: map['role_name'],
       isActive: map['is_active'] ?? true,
+      theme: map['theme'] ?? 'light', // NOVO
+      customPermissions: map['custom_permissions'], // NOVO
     );
   }
 
@@ -33,6 +37,8 @@ class UserModel extends UserEntity {
       'password': password,
       'role_id': roleId,
       'is_active': isActive,
+      'theme': theme, // NOVO
+      'custom_permissions': customPermissions, // NOVO
     };
   }
 
@@ -46,6 +52,8 @@ class UserModel extends UserEntity {
       roleId: entity.roleId,
       roleName: entity.roleName,
       isActive: entity.isActive,
+      theme: entity.theme, // NOVO
+      customPermissions: entity.customPermissions, // NOVO
     );
   }
 }

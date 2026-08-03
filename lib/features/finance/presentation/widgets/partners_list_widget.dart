@@ -64,13 +64,13 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.resolveWith(
                     (states) => states.contains(WidgetState.selected)
-                        ? AppColors.primary
+                        ? context.appColors.primary
                         : Colors.white,
                   ),
                   foregroundColor: WidgetStateProperty.resolveWith(
                     (states) => states.contains(WidgetState.selected)
                         ? Colors.white
-                        : AppColors.textTitle,
+                        : context.appColors.textTitle,
                   ),
                 ),
               ),
@@ -110,7 +110,7 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                     style: TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.appColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -152,7 +152,7 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                     style: const TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                    backgroundColor: context.appColors.success,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -174,10 +174,10 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
               child: BlocBuilder<PartnerBloc, PartnerState>(
                 builder: (context, state) {
                   if (state is PartnerInitial) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         "Use o campo de busca acima para encontrar parceiros.",
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: context.appColors.textMuted),
                       ),
                     );
                   }
@@ -188,17 +188,17 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                     return Center(
                       child: Text(
                         state.message,
-                        style: const TextStyle(color: AppColors.error),
+                        style: TextStyle(color: context.appColors.error),
                       ),
                     );
                   }
 
                   if (state is PartnerLoaded) {
                     if (state.partners.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
                           "Nenhum resultado encontrado.",
-                          style: TextStyle(color: AppColors.textMuted),
+                          style: TextStyle(color: context.appColors.textMuted),
                         ),
                       );
                     }
@@ -208,7 +208,7 @@ class _PartnersListWidgetState extends State<PartnersListWidget> {
                         // MÁGICA 1: Isso esconde os checkboxes e permite clicar na linha toda
                         showCheckboxColumn: false,
                         headingRowColor: WidgetStateProperty.all(
-                          AppColors.background,
+                          context.appColors.background,
                         ),
                         columns: const [
                           DataColumn(

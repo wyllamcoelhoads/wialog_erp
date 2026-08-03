@@ -87,23 +87,23 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.appColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
         automaticallyImplyLeading: false,
         title: Text(
           _isEditing ? 'Editar Fornecedor' : 'Cadastro de Fornecedor',
-          style: const TextStyle(
-            color: AppColors.textTitle,
+          style: TextStyle(
+            color: context.appColors.textTitle,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           if (_isEditing)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              icon: Icon(Icons.delete_outline, color: context.appColors.error),
               tooltip: 'Excluir Fornecedor',
               onPressed: () {
                 context.read<PartnerBloc>().add(
@@ -122,7 +122,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppColors.error,
+                backgroundColor: context.appColors.error,
               ),
             );
           } else if (state is PartnerLoaded && _isSaving) {
@@ -134,7 +134,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                       ? 'Fornecedor atualizado com sucesso!'
                       : 'Fornecedor salvo com sucesso!',
                 ),
-                backgroundColor: AppColors.success,
+                backgroundColor: context.appColors.success,
               ),
             );
             _closeTab(context);
@@ -152,11 +152,15 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                   children: [
                     _buildSectionTitle('1. Identificação do Fornecedor'),
                     Card(
-                      color: Colors.white,
+                      color: context.appColors.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        side: BorderSide(
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.2,
+                          ),
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
@@ -247,7 +251,10 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey.shade200),
+                                  side: BorderSide(
+                                    color: context.appColors.textMuted
+                                        .withValues(alpha: 0.2),
+                                  ),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(24.0),
@@ -343,7 +350,7 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                               horizontal: 32,
                               vertical: 16,
                             ),
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.appColors.primary,
                           ),
                         ),
                       ],
@@ -404,10 +411,10 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: AppColors.textTitle,
+          color: context.appColors.textTitle,
         ),
       ),
     );

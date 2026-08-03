@@ -62,7 +62,7 @@ class _UserPageState extends State<UserPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: context.appColors.surface,
               title: Text(
                 isEditing ? 'Editar Usuário' : 'Novo Usuário do Sistema',
               ),
@@ -100,11 +100,12 @@ class _UserPageState extends State<UserPage> {
                               if (isEditing) {
                                 return TextFormField(
                                   initialValue: user.employeeName,
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Funcionário Vinculado',
-                                    border: OutlineInputBorder(),
+                                    border: const OutlineInputBorder(),
                                     filled: true,
-                                    fillColor: Color(0xFFF5F5F5),
+                                    fillColor: context.appColors.textMuted
+                                        .withValues(alpha: 0.05),
                                   ),
                                   readOnly: true,
                                 );
@@ -112,7 +113,7 @@ class _UserPageState extends State<UserPage> {
 
                               return DropdownButtonFormField<int>(
                                 isExpanded: true,
-                                value: selectedEmployeeId,
+                                initialValue: selectedEmployeeId,
                                 decoration: const InputDecoration(
                                   labelText: 'Vincular a qual Funcionário?',
                                   border: OutlineInputBorder(),
@@ -245,7 +246,7 @@ class _UserPageState extends State<UserPage> {
                     }
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.success,
+                    backgroundColor: context.appColors.success,
                   ),
                   child: Text(
                     isEditing ? 'Atualizar Permissões' : 'Criar Login',
@@ -263,9 +264,11 @@ class _UserPageState extends State<UserPage> {
     // CORREÇÃO AQUI: Validando pelo nome dinâmico do cargo que vem do banco!
     if (user.roleName?.toLowerCase() == 'administrador' && user.id == 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Você não pode inativar o Administrador Principal!'),
-          backgroundColor: AppColors.error,
+        SnackBar(
+          content: const Text(
+            'Você não pode inativar o Administrador Principal!',
+          ),
+          backgroundColor: context.appColors.error,
         ),
       );
       return;
@@ -284,7 +287,9 @@ class _UserPageState extends State<UserPage> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.appColors.error,
+            ),
             onPressed: () {
               context.read<UserBloc>().add(DeleteUser(user.id));
               Navigator.of(ctx).pop();
@@ -299,7 +304,7 @@ class _UserPageState extends State<UserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -308,7 +313,7 @@ class _UserPageState extends State<UserPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -316,28 +321,28 @@ class _UserPageState extends State<UserPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textTitle,
+                        color: context.appColors.textTitle,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Vincule funcionários a um E-mail e Senha para que eles acessem o ERP.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                       ),
                     ),
                   ],
                 ),
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Mostrar Inativos',
-                      style: TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.appColors.textMuted),
                     ),
                     Switch(
                       value: _showInactive,
-                      activeThumbColor: AppColors.primary,
+                      activeColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<UserBloc>().add(
@@ -354,7 +359,7 @@ class _UserPageState extends State<UserPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.appColors.primary,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -370,9 +375,11 @@ class _UserPageState extends State<UserPage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: context.appColors.textMuted.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: BlocBuilder<UserBloc, UserState>(
                   builder: (context, state) {
@@ -383,16 +390,18 @@ class _UserPageState extends State<UserPage> {
                       return Center(
                         child: Text(
                           state.message,
-                          style: const TextStyle(color: AppColors.error),
+                          style: TextStyle(color: context.appColors.error),
                         ),
                       );
                     }
                     if (state is UserLoaded) {
                       if (state.users.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Nenhum usuário encontrado.',
-                            style: TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                            ),
                           ),
                         );
                       }
@@ -403,7 +412,7 @@ class _UserPageState extends State<UserPage> {
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(
-                              AppColors.background,
+                              context.appColors.background,
                             ),
                             columns: const [
                               DataColumn(
@@ -442,8 +451,8 @@ class _UserPageState extends State<UserPage> {
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color: user.isActive
-                                                ? Colors.black
-                                                : Colors.grey,
+                                                ? context.appColors.textBody
+                                                : context.appColors.textMuted,
                                           ),
                                         ),
                                         if (!user.isActive) ...[
@@ -454,16 +463,15 @@ class _UserPageState extends State<UserPage> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.error.withValues(
-                                                alpha: 0.1,
-                                              ),
+                                              color: context.appColors.error
+                                                  .withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),
-                                            child: const Text(
+                                            child: Text(
                                               'Bloqueado',
                                               style: TextStyle(
-                                                color: AppColors.error,
+                                                color: context.appColors.error,
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -478,19 +486,18 @@ class _UserPageState extends State<UserPage> {
                                       user.email,
                                       style: TextStyle(
                                         color: user.isActive
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? context.appColors.textBody
+                                            : context.appColors.textMuted,
                                       ),
                                     ),
                                   ),
-                                  // CORREÇÃO: Agora usamos a String limpa que já vem do Banco de Dados!
                                   DataCell(
                                     Text(
                                       user.roleName ?? 'Sem Cargo',
                                       style: TextStyle(
                                         color: user.isActive
-                                            ? Colors.black
-                                            : Colors.grey,
+                                            ? context.appColors.textBody
+                                            : context.appColors.textMuted,
                                       ),
                                     ),
                                   ),
@@ -499,9 +506,9 @@ class _UserPageState extends State<UserPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.edit,
-                                            color: AppColors.info,
+                                            color: context.appColors.info,
                                             size: 20,
                                           ),
                                           onPressed: () =>
@@ -512,9 +519,9 @@ class _UserPageState extends State<UserPage> {
                                             user.id !=
                                                 1) // Esconde a lixeira para o super admin
                                           IconButton(
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.delete_outline,
-                                              color: AppColors.error,
+                                              color: context.appColors.error,
                                               size: 20,
                                             ),
                                             onPressed: () =>
