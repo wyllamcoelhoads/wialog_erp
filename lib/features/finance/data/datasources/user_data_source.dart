@@ -15,7 +15,7 @@ class UserPostgresDataSource implements UserDataSource {
   @override
   Future<List<UserModel>> getUsers({bool includeInactive = false}) async {
     String sql = '''
-      SELECT u.*, e.name as employee_name, r.name as role_name 
+      SELECT u.*, e.name as employee_name, r.name as role_name, r.permissions as role_permissions 
       FROM users u
       JOIN employees e ON u.employee_id = e.id
       JOIN roles r ON u.role_id = r.id

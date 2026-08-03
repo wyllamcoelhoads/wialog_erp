@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
+import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings_page.dart';
 
@@ -92,8 +95,36 @@ class DashboardPageState extends State<DashboardPage> {
     closeTab(_activeTabIndex);
   }
 
+  // FUNÇÃO MESTRA DE CHECAGEM DE PERMISSÃO
+  bool? _hasPermission(UserEntity user, String module) {
+    // 1. O Super Admin tem passe livre absoluto
+    if (user.roleName?.toLowerCase() == 'admin' ||
+        user.roleName?.toLowerCase() == 'administrador') {
+      return true;
+    }
+
+    // 2. Se o usuário tem permissões específicas, a palavra dele é a lei
+    if (user.customPermissions!.isNotEmpty &&
+        user.customPermissions!.containsKey(module)) {
+      return user.customPermissions?[module]!;
+    }
+
+    // 3. Se não tem permissão específica, herda a regra do Cargo dele
+    return user.rolePermissions[module] ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Pegamos o usuário logado
+    final authState = context.watch<AuthBloc>().state;
+    UserEntity? currentUser;
+    if (authState is AuthAuthenticated) {
+      currentUser = authState.user;
+    }
+
+    // Se a sessão caiu, não mostra nada
+    if (currentUser == null) return const SizedBox.shrink();
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
@@ -124,62 +155,66 @@ class DashboardPageState extends State<DashboardPage> {
                 const SizedBox(height: 40),
 
                 // Botões do menu que agora ABRIRÃO ABAS
-                _buildSidebarItem(
-                  icon: Icons.dashboard,
-                  title: 'Visão Geral',
-                  onTap: () => openTab(
-                    WorkspaceTab(
-                      // TIRE O UNDERLINE AQUI
-                      id: 'dashboard',
-                      title: 'Visão Geral',
-                      icon: Icons.dashboard,
-                      content: _buildVisaoGeral(),
+                if (_hasPermission(currentUser, 'dashboard') == true)
+                  _buildSidebarItem(
+                    icon: Icons.dashboard,
+                    title: 'Visão Geral',
+                    onTap: () => openTab(
+                      WorkspaceTab(
+                        // TIRE O UNDERLINE AQUI
+                        id: 'dashboard',
+                        title: 'Visão Geral',
+                        icon: Icons.dashboard,
+                        content: _buildVisaoGeral(),
+                      ),
                     ),
                   ),
-                ),
-                _buildSidebarItem(
-                  icon: Icons.directions_car,
-                  title: 'Frotas',
-                  onTap: () => openTab(
-                    WorkspaceTab(
-                      // TIRE O UNDERLINE AQUI
-                      id: 'frotas',
-                      title: 'Frotas',
-                      icon: Icons.directions_car,
-                      content: const Center(
-                        child: Text(
-                          'Módulo de Frotas e Manutenções (Em breve)',
+                if (mounted && _hasPermission(currentUser, 'frotas') == true)
+                  _buildSidebarItem(
+                    icon: Icons.directions_car,
+                    title: 'Frotas',
+                    onTap: () => openTab(
+                      WorkspaceTab(
+                        // TIRE O UNDERLINE AQUI
+                        id: 'frotas',
+                        title: 'Frotas',
+                        icon: Icons.directions_car,
+                        content: const Center(
+                          child: Text(
+                            'Módulo de Frotas e Manutenções (Em breve)',
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                _buildSidebarItem(
-                  icon: Icons.account_balance_wallet,
-                  title: 'Financeiro',
-                  onTap: () => openTab(
-                    WorkspaceTab(
-                      // TIRE O UNDERLINE AQUI
-                      id: 'finance',
-                      title: 'Financeiro',
-                      icon: Icons.account_balance_wallet,
-                      content: const FinancePage(),
+                if (mounted && _hasPermission(currentUser, 'finance') == true)
+                  _buildSidebarItem(
+                    icon: Icons.account_balance_wallet,
+                    title: 'Financeiro',
+                    onTap: () => openTab(
+                      WorkspaceTab(
+                        // TIRE O UNDERLINE AQUI
+                        id: 'finance',
+                        title: 'Financeiro',
+                        icon: Icons.account_balance_wallet,
+                        content: const FinancePage(),
+                      ),
                     ),
                   ),
-                ),
-                // NOVO ITEM: O Botão de Configurações na Barra Esquerda
-                _buildSidebarItem(
-                  icon: Icons.settings,
-                  title: 'Configurações',
-                  onTap: () => openTab(
-                    WorkspaceTab(
-                      id: 'settings',
-                      title: 'Configurações',
-                      icon: Icons.settings,
-                      content: const SettingsPage(),
+                if (mounted && _hasPermission(currentUser, 'settings') == true)
+                  // NOVO ITEM: O Botão de Configurações na Barra Esquerda
+                  _buildSidebarItem(
+                    icon: Icons.settings,
+                    title: 'Configurações',
+                    onTap: () => openTab(
+                      WorkspaceTab(
+                        id: 'settings',
+                        title: 'Configurações',
+                        icon: Icons.settings,
+                        content: const SettingsPage(),
+                      ),
                     ),
                   ),
-                ),
 
                 const Spacer(),
                 ListTile(

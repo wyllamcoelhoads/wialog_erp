@@ -49,6 +49,20 @@ class _UserPageState extends State<UserPage> {
     int? selectedRoleId = user?.roleId;
     int? selectedEmployeeId = user?.employeeId;
 
+    // CONTROLE DE PERMISSÕES CUSTOMIZADAS
+    bool useCustomPermissions = user!.customPermissions?.isNotEmpty ?? false;
+    Map<String, bool> currentCustomPermissions = Map.from(
+      user.customPermissions ?? {},
+    );
+
+    final Map<String, String> availablePermissions = {
+      'dashboard': 'Visão Geral (Dashboard)',
+      'fleet': 'Frotas e Manutenções',
+      'finance': 'Módulo Financeiro (Caixa, Contas)',
+      'settings': 'Configurações Gerais',
+      'users': 'Gestão de Usuários e Acessos',
+    };
+
     // NOVO: Pegamos a lista atual de usuários carregados na tela para usar no filtro
     final userState = context.read<UserBloc>().state;
     List<UserEntity> allSystemUsers = [];
@@ -214,6 +228,81 @@ class _UserPageState extends State<UserPage> {
                             return const Text('Erro ao carregar cargos');
                           },
                         ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        SwitchListTile(
+                          title: Text(
+                            'Permissões Específicas',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: context.appColors.textTitle,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Sobrescrever as regras do cargo para este usuário.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.appColors.textMuted,
+                            ),
+                          ),
+                          activeThumbColor: context.appColors.primary,
+                          value: useCustomPermissions,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              useCustomPermissions = val;
+                              if (!val) {
+                                currentCustomPermissions
+                                    .clear(); // Se desligar, limpa as regras
+                              }
+                            });
+                          },
+                        ),
+                        if (useCustomPermissions)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: context.appColors.background,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: availablePermissions.entries.map((
+                                entry,
+                              ) {
+                                final isAllowed =
+                                    currentCustomPermissions[entry.key] ??
+                                    false;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4.0,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        entry.value,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: context.appColors.textBody,
+                                        ),
+                                      ),
+                                      Switch(
+                                        value: isAllowed,
+                                        activeThumbColor:
+                                            context.appColors.primary,
+                                        onChanged: (val) => setDialogState(
+                                          () =>
+                                              currentCustomPermissions[entry
+                                                      .key] =
+                                                  val,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -228,13 +317,15 @@ class _UserPageState extends State<UserPage> {
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       final newUser = UserEntity(
-                        id: user?.id ?? 0,
-                        employeeId: selectedEmployeeId!,
+                        id: user.id,
+                        employeeId: selectedEmployeeId ?? user.employeeId,
                         email: emailController.text.trim().toLowerCase(),
                         password: passwordController.text,
-                        // CORREÇÃO: Agora passamos o ID dinâmico do cargo selecionado!
                         roleId: selectedRoleId!,
-                        isActive: user?.isActive ?? true,
+                        isActive: user.isActive,
+                        theme: user.theme,
+                        customPermissions:
+                            currentCustomPermissions, // Salva o novo mapa
                       );
 
                       if (isEditing) {
