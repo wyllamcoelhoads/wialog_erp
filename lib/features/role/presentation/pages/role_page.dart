@@ -278,7 +278,7 @@ class _RolePageState extends State<RolePage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
@@ -309,7 +309,7 @@ class _RolePageState extends State<RolePage> {
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            context.appColors.background,
+                            context.appColors.surface,
                           ),
                           columns: const [
                             DataColumn(
@@ -345,8 +345,8 @@ class _RolePageState extends State<RolePage> {
                                     role.id.toString(),
                                     style: TextStyle(
                                       color: role.isActive
-                                          ? Colors.black
-                                          : Colors.grey,
+                                          ? context.appColors.textBody
+                                          : Colors.redAccent,
                                     ),
                                   ),
                                 ),
@@ -358,8 +358,8 @@ class _RolePageState extends State<RolePage> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: role.isActive
-                                              ? Colors.black
-                                              : Colors.grey,
+                                              ? context.appColors.textBody
+                                              : Colors.redAccent,
                                         ),
                                       ),
                                       if (!role.isActive) ...[
@@ -394,8 +394,8 @@ class _RolePageState extends State<RolePage> {
                                     role.description ?? '-',
                                     style: TextStyle(
                                       color: role.isActive
-                                          ? Colors.black
-                                          : Colors.grey,
+                                          ? context.appColors.textBody
+                                          : Colors.redAccent,
                                     ),
                                   ),
                                 ),
