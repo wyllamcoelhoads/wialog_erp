@@ -375,6 +375,9 @@ class _UserPageState extends State<UserPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: context.appColors.error,
+            ),
             child: const Text('Cancelar'),
           ),
           FilledButton(

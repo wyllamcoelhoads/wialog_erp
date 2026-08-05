@@ -71,7 +71,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -189,7 +189,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                     ),
                     Switch(
                       value: _showInactive,
-                      activeColor: context.appColors.primary,
+                      activeThumbColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         _loadCategories();
@@ -249,7 +249,7 @@ class _CategorySettingsPageState extends State<CategorySettingsPage>
                     bottomRight: Radius.circular(8),
                   ),
                   border: Border.all(
-                    color: context.appColors.textMuted.withOpacity(0.2),
+                    color: context.appColors.textMuted.withValues(alpha: 0.2),
                   ),
                 ),
                 child: BlocBuilder<CategoryBloc, CategoryState>(

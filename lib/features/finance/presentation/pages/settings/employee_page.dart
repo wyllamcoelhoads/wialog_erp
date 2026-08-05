@@ -226,6 +226,9 @@ class _EmployeePageState extends State<EmployeePage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.appColors.error,
+                  ),
                   child: const Text('Cancelar'),
                 ),
                 FilledButton(
@@ -280,6 +283,9 @@ class _EmployeePageState extends State<EmployeePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: context.appColors.error,
+            ),
             child: const Text('Cancelar'),
           ),
           FilledButton(

@@ -43,7 +43,7 @@ class _RolePageState extends State<RolePage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: context.appColors.surface,
           title: Text(isEditing ? 'Editar Cargo' : 'Novo Cargo'),
           content: SizedBox(
             width: 450,
@@ -128,6 +128,9 @@ class _RolePageState extends State<RolePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: context.appColors.error,
+              ),
               child: const Text('Cancelar'),
             ),
             FilledButton(
@@ -181,6 +184,9 @@ class _RolePageState extends State<RolePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: context.appColors.error,
+            ),
             child: const Text('Cancelar'),
           ),
           FilledButton(

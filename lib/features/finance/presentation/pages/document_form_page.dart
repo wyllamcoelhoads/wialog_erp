@@ -687,6 +687,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       children: [
                         OutlinedButton(
                           onPressed: () => _closeTab(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: context.appColors.error,
+                          ),
                           child: const Text('Cancelar'),
                         ),
                         const SizedBox(width: 16),

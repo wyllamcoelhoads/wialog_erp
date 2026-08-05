@@ -356,7 +356,8 @@ class _ClientFormPageState extends State<ClientFormPage> {
                         OutlinedButton(
                           onPressed: () => _closeTab(context),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
+                            foregroundColor: context.appColors.error,
+                            padding: EdgeInsets.symmetric(
                               horizontal: 32,
                               vertical: 16,
                             ),
