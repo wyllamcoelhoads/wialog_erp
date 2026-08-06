@@ -226,6 +226,9 @@ class _EmployeePageState extends State<EmployeePage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.appColors.error,
+                  ),
                   child: const Text('Cancelar'),
                 ),
                 FilledButton(
@@ -280,6 +283,9 @@ class _EmployeePageState extends State<EmployeePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: context.appColors.error,
+            ),
             child: const Text('Cancelar'),
           ),
           FilledButton(
@@ -364,7 +370,7 @@ class _EmployeePageState extends State<EmployeePage> {
                     ),
                     Switch(
                       value: _showInactive,
-                      activeColor: context.appColors.primary,
+                      activeThumbColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<EmployeeBloc>().add(
@@ -396,12 +402,11 @@ class _EmployeePageState extends State<EmployeePage> {
 
             Expanded(
               child: Container(
+                padding: EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                   color: context.appColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: context.appColors.textMuted.withValues(alpha: 0.2),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.appColors.border),
                 ),
                 child: BlocBuilder<EmployeeBloc, EmployeeState>(
                   builder: (context, state) {
@@ -487,7 +492,8 @@ class _EmployeePageState extends State<EmployeePage> {
                                             fontWeight: FontWeight.w600,
                                             color: emp.isActive
                                                 ? context.appColors.textBody
-                                                : context.appColors.textMuted,
+                                                : context.appColors.error
+                                                      .withValues(alpha: 0.5),
                                           ),
                                         ),
                                         if (!emp.isActive) ...[
@@ -522,7 +528,8 @@ class _EmployeePageState extends State<EmployeePage> {
                                       style: TextStyle(
                                         color: emp.isActive
                                             ? context.appColors.textBody
-                                            : context.appColors.textMuted,
+                                            : context.appColors.error
+                                                  .withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ),
@@ -532,7 +539,8 @@ class _EmployeePageState extends State<EmployeePage> {
                                       style: TextStyle(
                                         color: emp.isActive
                                             ? context.appColors.textBody
-                                            : context.appColors.textMuted,
+                                            : context.appColors.error
+                                                  .withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ),

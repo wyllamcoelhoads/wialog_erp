@@ -8,7 +8,8 @@ class UserEntity {
   final String? roleName; // Trazido do banco
   final bool isActive;
   final String theme;
-  final String? customPermissions;
+  final Map<String, bool>? customPermissions;
+  final Map<String, bool> rolePermissions; // Permissões herdadas de cargo
 
   UserEntity({
     required this.id,
@@ -20,6 +21,7 @@ class UserEntity {
     this.roleName,
     this.isActive = true,
     this.theme = 'light',
-    this.customPermissions,
+    this.customPermissions = const {},
+    this.rolePermissions = const {},
   });
 }

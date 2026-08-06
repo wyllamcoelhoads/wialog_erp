@@ -14,7 +14,7 @@ class AuthPostgresDataSource implements AuthDataSource {
   @override
   Future<UserModel?> authenticate(String email, String password) async {
     const sql = '''
-      SELECT u.*, e.name as employee_name, r.name as role_name 
+      SELECT u.*, e.name as employee_name, r.name as role_name, r.permissions as role_permissions 
       FROM users u
       JOIN employees e ON u.employee_id = e.id
       JOIN roles r ON u.role_id = r.id

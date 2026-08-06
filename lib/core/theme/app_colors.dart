@@ -13,6 +13,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
   final Color warning;
   final Color info;
   final Color primary;
+  final Color border;
 
   const AppColorsExt({
     required this.sidebar,
@@ -26,6 +27,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     required this.warning,
     required this.info,
     required this.primary,
+    required this.border,
   });
 
   static const light = AppColorsExt(
@@ -40,6 +42,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     warning: Color(0xFFF57C00),
     info: Color(0xFF1976D2),
     primary: Color(0xFF1976D2),
+    border: Color(0xFF9E9E9E),
   );
 
   static const dark = AppColorsExt(
@@ -54,6 +57,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     warning: Color(0xFFFFA726),
     info: Color(0xFF42A5F5),
     primary: Color(0xFF1976D2),
+    border: Color(0xFF9E9E9E),
   );
 
   @override
@@ -69,6 +73,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
     Color? warning,
     Color? info,
     Color? primary,
+    Color? border,
   }) {
     return AppColorsExt(
       sidebar: sidebar ?? this.sidebar,
@@ -82,6 +87,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
       warning: warning ?? this.warning,
       info: info ?? this.info,
       primary: primary ?? this.primary,
+      border: border ?? this.border,
     );
   }
 
@@ -100,6 +106,7 @@ class AppColorsExt extends ThemeExtension<AppColorsExt> {
       error: Color.lerp(error, other.error, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       info: Color.lerp(info, other.info, t)!,
+      border: Color.lerp(border, other.border, t)!,
     );
   }
 }

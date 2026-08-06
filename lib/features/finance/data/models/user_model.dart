@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
@@ -12,9 +13,21 @@ class UserModel extends UserEntity {
     super.isActive,
     super.theme,
     super.customPermissions,
+    super.rolePermissions,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    // Helper para converter o texto JSON do banco em Mapa
+    Map<String, bool> parsePerms(dynamic data) {
+      if (data == null || data.toString().trim().isEmpty) return {};
+      try {
+        final decoded = jsonDecode(data.toString());
+        return Map<String, bool>.from(decoded);
+      } catch (e) {
+        return {};
+      }
+    }
+
     return UserModel(
       id: map['id'],
       employeeId: map['employee_id'],
@@ -25,7 +38,8 @@ class UserModel extends UserEntity {
       roleName: map['role_name'],
       isActive: map['is_active'] ?? true,
       theme: map['theme'] ?? 'light', // NOVO
-      customPermissions: map['custom_permissions'], // NOVO
+      customPermissions: parsePerms(map['custom_permissions']), // NOVO
+      rolePermissions: parsePerms(map['role_permissions']), // NOVO
     );
   }
 
@@ -38,7 +52,8 @@ class UserModel extends UserEntity {
       'role_id': roleId,
       'is_active': isActive,
       'theme': theme, // NOVO
-      'custom_permissions': customPermissions, // NOVO
+      'custom_permissions': jsonEncode(customPermissions), // NOVO
+      'role_permissions': jsonEncode(rolePermissions), // NOVO
     };
   }
 
@@ -54,6 +69,7 @@ class UserModel extends UserEntity {
       isActive: entity.isActive,
       theme: entity.theme, // NOVO
       customPermissions: entity.customPermissions, // NOVO
+      rolePermissions: entity.rolePermissions, // NOVO
     );
   }
 }
