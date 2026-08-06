@@ -277,10 +277,11 @@ class _RolePageState extends State<RolePage> {
 
             Expanded(
               child: Container(
+                padding: EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                   color: context.appColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.appColors.border),
                 ),
                 child: BlocBuilder<RoleBloc, RoleState>(
                   builder: (context, state) {
@@ -309,7 +310,7 @@ class _RolePageState extends State<RolePage> {
                       return SingleChildScrollView(
                         child: DataTable(
                           headingRowColor: WidgetStateProperty.all(
-                            context.appColors.surface,
+                            context.appColors.background,
                           ),
                           columns: const [
                             DataColumn(

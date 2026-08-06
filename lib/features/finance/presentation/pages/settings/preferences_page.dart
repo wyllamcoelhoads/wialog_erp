@@ -46,13 +46,11 @@ class PreferencesPage extends StatelessWidget {
 
             // CARD 1: PREFERÊNCIAS VISUAIS (TEMA)
             Card(
-              color: Theme.of(context).cardColor,
+              color: context.appColors.surface,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: const Color(0xFF9E9E9E).withValues(alpha: 0.2),
-                ),
+                side: BorderSide(color: context.appColors.border, width: 1),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -64,7 +62,7 @@ class PreferencesPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        color: context.appColors.textBody,
                       ),
                     ),
                     const Divider(),
@@ -79,9 +77,7 @@ class PreferencesPage extends StatelessWidget {
                       ),
                       title: Text(
                         'Modo Escuro (Dark Mode)',
-                        style: TextStyle(
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
+                        style: TextStyle(color: context.appColors.textBody),
                       ),
                       subtitle: Text(
                         'Altera as cores do sistema para reduzir o cansaço visual.',
@@ -118,13 +114,11 @@ class PreferencesPage extends StatelessWidget {
 
             // CARD 2: PERMISSÕES DE ACESSO
             Card(
-              color: Theme.of(context).cardColor,
+              color: context.appColors.surface,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: const Color(0xFF9E9E9E).withValues(alpha: 0.2),
-                ),
+                side: BorderSide(color: context.appColors.border, width: 1),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
