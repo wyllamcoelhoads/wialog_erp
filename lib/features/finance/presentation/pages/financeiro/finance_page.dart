@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../widgets/payable_list_widget.dart';
-import '../widgets/receivable_list_widget.dart';
-import '../widgets/partners_list_widget.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/financeiro/abas/pay_able_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/financeiro/abas/receivable_page.dart';
+import 'package:wialog_erp/features/finance/presentation/widgets/partners_list_widget.dart';
+
+// ADICIONAMOS AS DUAS TELAS NOVAS AQUI
 
 class FinancePage extends StatelessWidget {
   const FinancePage({super.key});
@@ -53,11 +55,8 @@ class FinancePage extends StatelessWidget {
                           id: 'finance_payable',
                           title: 'Contas a Pagar',
                           icon: Icons.money_off,
-                          content: _buildTabContent(
-                            context,
-                            'Consulta de Contas a Pagar',
-                            const PayableListWidget(),
-                          ),
+                          // AGORA ELE CHAMA A NOVA TELA CHEIA DE ABAS
+                          content: const PayablePage(),
                         ),
                       );
                     },
@@ -74,11 +73,8 @@ class FinancePage extends StatelessWidget {
                           id: 'finance_receivable',
                           title: 'Contas a Receber',
                           icon: Icons.attach_money,
-                          content: _buildTabContent(
-                            context,
-                            'Consulta de Contas a Receber',
-                            const ReceivableListWidget(),
-                          ),
+                          // AGORA ELE CHAMA A NOVA TELA CHEIA DE ABAS
+                          content: const ReceivablePage(),
                         ),
                       );
                     },
@@ -130,7 +126,7 @@ class FinancePage extends StatelessWidget {
     );
   }
 
-  // Empacotador para transformar os widgets de lista em páginas completas com título
+  // Mantemos esse empacotador apenas para o PartnersListWidget que não tem abas próprias (ainda)
   Widget _buildTabContent(BuildContext context, String title, Widget child) {
     return Scaffold(
       backgroundColor: context.appColors.background,
@@ -138,7 +134,7 @@ class FinancePage extends StatelessWidget {
         backgroundColor: context.appColors.surface,
         elevation: 0,
         scrolledUnderElevation: 1,
-        automaticallyImplyLeading: false, // Esconde a seta de voltar
+        automaticallyImplyLeading: false,
         title: Text(
           title,
           style: TextStyle(
@@ -147,11 +143,10 @@ class FinancePage extends StatelessWidget {
           ),
         ),
       ),
-      body: child, // Aqui entra o PayableListWidget, ReceivableListWidget, etc.
+      body: child,
     );
   }
 
-  // O card visual (mesmo padrão usado na tela de configurações)
   Widget _buildFinanceCard(
     BuildContext context, {
     required String title,
@@ -164,7 +159,7 @@ class FinancePage extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 320,
-        height: 210, // Altura fixa para manter todos alinhados perfeitamente
+        height: 210,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: context.appColors.surface,
