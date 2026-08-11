@@ -24,8 +24,8 @@ class ReceivablePage extends StatelessWidget {
             ),
           ),
           bottom: TabBar(
-            isScrollable: true, // Permite rolagem se a tela for pequena
-            tabAlignment: TabAlignment.start,
+            //isScrollable: true, // Permite rolagem se a tela for pequena
+            //tabAlignment: TabAlignment.center,
             labelColor: context.appColors.primary,
             unselectedLabelColor: context.appColors.textMuted,
             indicatorColor: context.appColors.primary,
