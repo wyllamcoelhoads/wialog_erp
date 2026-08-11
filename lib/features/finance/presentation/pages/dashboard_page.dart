@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
-import 'package:wialog_erp/features/finance/presentation/pages/finance_page.dart';
+import 'package:wialog_erp/features/finance/presentation/pages/financeiro/finance_page.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/settings_page.dart';
 
 // Classe auxiliar para gerenciar as abas abertas
