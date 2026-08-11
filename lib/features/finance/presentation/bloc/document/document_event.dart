@@ -41,5 +41,34 @@ class DeleteDocument extends DocumentEvent {
   List<Object?> get props => [id, type];
 }
 
+// NOVO: Evento disparado quando o usuário clica em "Confirmar Baixa"
+class SettleDocument extends DocumentEvent {
+  final String documentId;
+  final DocumentType type;
+  final int bankAccountId;
+  final int paymentMethodId;
+  final double amount;
+  final DateTime paymentDate;
+
+  const SettleDocument({
+    required this.documentId,
+    required this.type,
+    required this.bankAccountId,
+    required this.paymentMethodId,
+    required this.amount,
+    required this.paymentDate,
+  });
+
+  @override
+  List<Object?> get props => [
+    documentId,
+    type,
+    bankAccountId,
+    paymentMethodId,
+    amount,
+    paymentDate,
+  ];
+}
+
 // NOVO EVENTO: Usado para limpar a tabela ao trocar de aba
 class ClearDocuments extends DocumentEvent {}

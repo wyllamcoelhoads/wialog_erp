@@ -57,5 +57,24 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         emit(DocumentError(e.toString()));
       }
     });
+
+    // NOVO: Intercepta a tentativa de baixa
+    on<SettleDocument>((event, emit) async {
+      emit(DocumentLoading());
+      try {
+        await repository.settleDocument(
+          event.documentId,
+          event.bankAccountId,
+          event.paymentMethodId,
+          event.amount,
+          event.paymentDate,
+        );
+        add(
+          LoadDocuments(type: event.type),
+        ); // Recarrega a tabela mostrando o título como "Pago"
+      } catch (e) {
+        emit(DocumentError('Erro na baixa: $e'));
+      }
+    });
   }
 }

@@ -22,6 +22,14 @@ import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
 
+// NOVO: Precisamos buscar as contas bancárias e moedas para preencher os Dropdowns
+import '../bloc/bank_account/bank_account_bloc.dart';
+import '../bloc/bank_account/bank_account_event.dart';
+import '../bloc/bank_account/bank_account_state.dart';
+import '../bloc/payment_method/payment_method_bloc.dart';
+import '../bloc/payment_method/payment_method_event.dart';
+import '../bloc/payment_method/payment_method_state.dart';
+
 class DocumentFormPage extends StatefulWidget {
   final Map<String, dynamic>? document;
   final bool isReceivable;
@@ -47,9 +55,12 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   DateTime? _selectedDueDate;
   int? _selectedCategoryId;
   String? _selectedPartnerId;
-  String _installmentInterval = 'Mensal'; // Padrão
+  String _installmentInterval = 'Mensal';
 
-  // NOVO: Lista temporária para a Subgrid (Preview)
+  // NOVO
+  int? _selectedBankAccountId;
+  int? _selectedPaymentMethodId;
+
   List<FinancialDocumentEntity> _previewInstallments = [];
 
   @override
@@ -67,6 +78,10 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     context.read<CategoryBloc>().add(LoadCategories(type: categoryType));
     context.read<PartnerBloc>().add(LoadPartners(type: partnerType));
 
+    // NOVO: Carrega as listas de contas e moedas
+    context.read<BankAccountBloc>().add(const LoadBankAccounts());
+    context.read<PaymentMethodBloc>().add(const LoadPaymentMethods());
+
     _documentId = _isEditing
         ? doc!['id'].toString()
         : (100000 + Random().nextInt(899999)).toString();
@@ -75,6 +90,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     if (_isEditing && doc != null) {
       _selectedCategoryId = doc['category_id'] as int?;
       _selectedPartnerId = doc['partner_id'] as String?;
+      _selectedBankAccountId = doc['bank_account_id'] as int?; // NOVO
+      _selectedPaymentMethodId = doc['payment_method_id'] as int?; // NOVO
       if (doc['due_date'] != null) {
         _selectedDueDate = DateTime.parse(doc['due_date'].toString());
       }
@@ -175,6 +192,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           dueDate: dueDateParcela,
           categoryId: _selectedCategoryId!,
           partnerId: _selectedPartnerId!,
+          bankAccountId: _selectedBankAccountId, // NOVO
+          paymentMethodId: _selectedPaymentMethodId, // NOVO
           status: DocumentStatus.pending,
         ),
       );
@@ -217,6 +236,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           dueDate: picked,
           categoryId: old.categoryId,
           partnerId: old.partnerId,
+          bankAccountId: old.bankAccountId,
+          paymentMethodId: old.paymentMethodId, // NOVO
           status: old.status,
         );
       });
@@ -299,7 +320,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: context.appColors.textMuted.withOpacity(0.2),
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Padding(
@@ -357,7 +380,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                         return DropdownButtonFormField<int>(
                                           isExpanded:
                                               true, // <-- MUDANÇA AQUI: Evita quebra de tela
-                                          value: exists
+                                          initialValue: exists
                                               ? _selectedCategoryId
                                               : null,
                                           decoration: const InputDecoration(
@@ -463,6 +486,112 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 ),
                               ],
                             ),
+
+                            // NOVO BLOCO (Opcional no momento da criação)
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child:
+                                      BlocBuilder<
+                                        BankAccountBloc,
+                                        BankAccountState
+                                      >(
+                                        builder: (context, state) {
+                                          if (state is BankAccountLoaded) {
+                                            final bool exists = state.accounts
+                                                .any(
+                                                  (a) =>
+                                                      a.id ==
+                                                      _selectedBankAccountId,
+                                                );
+                                            return DropdownButtonFormField<int>(
+                                              isExpanded: true,
+                                              initialValue: exists
+                                                  ? _selectedBankAccountId
+                                                  : null,
+                                              decoration: const InputDecoration(
+                                                labelText:
+                                                    'Conta Bancária de Previsão (Opcional)',
+                                                prefixIcon: Icon(
+                                                  Icons.account_balance,
+                                                ),
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              items: state.accounts
+                                                  .map(
+                                                    (acc) => DropdownMenuItem(
+                                                      value: acc.id,
+                                                      child: Text(
+                                                        acc.description,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                              onChanged: (val) => setState(
+                                                () => _selectedBankAccountId =
+                                                    val,
+                                              ),
+                                            );
+                                          }
+                                          return const CircularProgressIndicator();
+                                        },
+                                      ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child:
+                                      BlocBuilder<
+                                        PaymentMethodBloc,
+                                        PaymentMethodState
+                                      >(
+                                        builder: (context, state) {
+                                          if (state is PaymentMethodLoaded) {
+                                            final bool exists = state.methods
+                                                .any(
+                                                  (m) =>
+                                                      m.id ==
+                                                      _selectedPaymentMethodId,
+                                                );
+                                            return DropdownButtonFormField<int>(
+                                              isExpanded: true,
+                                              initialValue: exists
+                                                  ? _selectedPaymentMethodId
+                                                  : null,
+                                              decoration: const InputDecoration(
+                                                labelText:
+                                                    'Forma de Pagto. Prevista (Opcional)',
+                                                prefixIcon: Icon(
+                                                  Icons.payments,
+                                                ),
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              items: state.methods
+                                                  .map(
+                                                    (m) => DropdownMenuItem(
+                                                      value: m.id,
+                                                      child: Text(
+                                                        m.name,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                              onChanged: (val) => setState(
+                                                () => _selectedPaymentMethodId =
+                                                    val,
+                                              ),
+                                            );
+                                          }
+                                          return const CircularProgressIndicator();
+                                        },
+                                      ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -500,7 +629,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
                                       isExpanded: true, // <-- MUDANÇA AQUI
-                                      value: _installmentInterval,
+                                      initialValue: _installmentInterval,
                                       decoration: const InputDecoration(
                                         labelText: 'Intervalo',
                                         prefixIcon: Icon(Icons.update),
@@ -574,7 +703,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                   decoration: BoxDecoration(
                                     border: Border.all(
                                       color: context.appColors.textMuted
-                                          .withOpacity(0.2),
+                                          .withValues(alpha: 0.2),
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -665,7 +794,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: context.appColors.textMuted.withOpacity(0.2),
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Padding(
@@ -687,9 +818,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                       children: [
                         OutlinedButton(
                           onPressed: () => _closeTab(context),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: context.appColors.error,
-                          ),
                           child: const Text('Cancelar'),
                         ),
                         const SizedBox(width: 16),
@@ -782,6 +910,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         dueDate: _selectedDueDate!,
         categoryId: _selectedCategoryId!,
         partnerId: _selectedPartnerId!,
+        bankAccountId: _selectedBankAccountId,
+        paymentMethodId: _selectedPaymentMethodId, // NOVO
         status: widget.document!['status'] == 'paid'
             ? DocumentStatus.paid
             : DocumentStatus.pending,
@@ -789,9 +919,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       );
       context.read<DocumentBloc>().add(UpdateDocument(document));
     } else {
-      // MODO CRIAÇÃO (Salva todas as parcelas geradas na Preview)
+      // MODO CRIAÇÃO
       for (var doc in _previewInstallments) {
-        // Injeta a observação atualizada em todas as parcelas antes de disparar
         final docToSave = FinancialDocumentEntity(
           id: doc.id,
           description: doc.description,
@@ -802,8 +931,10 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           dueDate: doc.dueDate,
           categoryId: doc.categoryId,
           partnerId: doc.partnerId,
+          bankAccountId: _selectedBankAccountId,
+          paymentMethodId: _selectedPaymentMethodId, // NOVO
           status: doc.status,
-          notes: _notesController.text, // Atualiza a obs
+          notes: _notesController.text,
         );
         context.read<DocumentBloc>().add(AddDocument(docToSave));
       }
@@ -854,7 +985,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
         fillColor: readOnly
-            ? context.appColors.textMuted.withOpacity(0.05)
+            ? context.appColors.textMuted.withValues(alpha: 0.05)
             : null,
         filled: readOnly,
       ),

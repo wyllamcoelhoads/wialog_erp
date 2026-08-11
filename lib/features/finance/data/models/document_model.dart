@@ -12,11 +12,15 @@ class DocumentModel extends FinancialDocumentEntity {
     super.paymentDate,
     required super.categoryId,
     required super.partnerId,
+    super.bankAccountId,
+    super.paymentMethodId,
     required super.status,
     super.notes,
     super.isActive,
     super.partnerName,
     super.categoryName,
+    super.bankAccountName,
+    super.paymentMethodName,
   });
 
   factory DocumentModel.fromMap(Map<String, dynamic> map) {
@@ -41,6 +45,8 @@ class DocumentModel extends FinancialDocumentEntity {
           : null,
       categoryId: map['category_id'],
       partnerId: map['partner_id'],
+      bankAccountId: map['bank_account_id'],
+      paymentMethodId: map['payment_method_id'],
       status: map['status'] == 'paid'
           ? DocumentStatus.paid
           : (map['status'] == 'canceled'
@@ -50,6 +56,8 @@ class DocumentModel extends FinancialDocumentEntity {
       isActive: map['is_active'] ?? true,
       partnerName: map['partner_name'], // Trazido pelo JOIN no SQL
       categoryName: map['category_name'], // Trazido pelo JOIN no SQL
+      bankAccountName: map['bank_account_name'], // Trazido pelo JOIN no SQL
+      paymentMethodName: map['payment_method_name'], // Trazido pelo JOIN no SQL
     );
   }
 
@@ -67,6 +75,8 @@ class DocumentModel extends FinancialDocumentEntity {
       'payment_date': paymentDate?.toIso8601String().split('T')[0],
       'category_id': categoryId,
       'partner_id': partnerId,
+      'bank_account_id': bankAccountId,
+      'payment_method_id': paymentMethodId,
       'status': status.name,
       'notes': notes,
       'is_active': isActive,
@@ -85,6 +95,8 @@ class DocumentModel extends FinancialDocumentEntity {
       paymentDate: entity.paymentDate,
       categoryId: entity.categoryId,
       partnerId: entity.partnerId,
+      bankAccountId: entity.bankAccountId,
+      paymentMethodId: entity.paymentMethodId,
       status: entity.status,
       notes: entity.notes,
       isActive: entity.isActive,
