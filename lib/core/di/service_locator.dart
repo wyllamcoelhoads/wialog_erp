@@ -4,19 +4,31 @@ import 'package:wialog_erp/features/auth/data/repositories/auth_repository_impl.
 import 'package:wialog_erp/features/auth/domain/repositories/auth_repository.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
+import 'package:wialog_erp/features/finance/data/datasources/category_datasource.dart';
+import 'package:wialog_erp/features/finance/data/datasources/document_data_source.dart';
 import 'package:wialog_erp/features/finance/data/datasources/employee_data_source.dart';
+import 'package:wialog_erp/features/finance/data/datasources/partner_datasource.dart';
 import 'package:wialog_erp/features/finance/data/datasources/payment_method_data_source.dart';
 import 'package:wialog_erp/features/finance/data/datasources/user_data_source.dart';
 import 'package:wialog_erp/features/finance/data/repositories/bank_account_repository_impl.dart';
+import 'package:wialog_erp/features/finance/data/repositories/category_repository_impl.dart';
+import 'package:wialog_erp/features/finance/data/repositories/document_repository_impl.dart';
 import 'package:wialog_erp/features/finance/data/repositories/employee_repository_impl.dart';
+import 'package:wialog_erp/features/finance/data/repositories/partner_repository_impl.dart';
 import 'package:wialog_erp/features/finance/data/repositories/payment_method_repository_impl.dart';
 import 'package:wialog_erp/features/finance/data/repositories/user_repository_impl.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/bank_account_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/category_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/document_repository.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/employee_repository.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/partner_repository.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/payment_method_repository.dart';
 import 'package:wialog_erp/features/finance/domain/repositories/user_repository.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/document/document_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/partner/partner_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
 import 'package:wialog_erp/features/role/data/datasources/role_data_source.dart';
@@ -24,24 +36,6 @@ import 'package:wialog_erp/features/role/data/repositories/role_repository_impl.
 import 'package:wialog_erp/features/role/domain/repositories/role_repository.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import '../database/database_connection.dart';
-
-// Imports de Parceiros
-import '../../features/finance/data/datasources/partner_datasource.dart';
-import '../../features/finance/data/repositories/partner_repository_impl.dart';
-import '../../features/finance/domain/repositories/partner_repository.dart';
-import '../../features/finance/presentation/bloc/partner/partner_bloc.dart';
-
-// Imports de Categorias
-import '../../features/finance/data/datasources/category_datasource.dart';
-import '../../features/finance/data/repositories/category_repository_impl.dart';
-import '../../features/finance/domain/repositories/category_repository.dart';
-import '../../features/finance/presentation/bloc/category/category_bloc.dart';
-
-// Imports de Documentos Financeiros (MUITO IMPORTANTE)
-import '../../features/finance/data/datasources/document_datasource.dart';
-import '../../features/finance/data/repositories/document_repository_impl.dart';
-import '../../features/finance/domain/repositories/document_repository.dart';
-import '../../features/finance/presentation/bloc/document/document_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -70,7 +64,6 @@ Future<void> initDependencies() async {
     () => CategoryRepositoryImpl(sl()),
   );
   sl.registerFactory<CategoryBloc>(() => CategoryBloc(sl()));
-
   // ==========================================
   // 4. FEATURES: DOCUMENTOS FINANCEIROS (A SOLUÇÃO DO ERRO ESTÁ AQUI)
   // ==========================================

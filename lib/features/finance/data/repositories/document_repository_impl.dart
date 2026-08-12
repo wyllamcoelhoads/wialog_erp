@@ -1,6 +1,7 @@
+import 'package:wialog_erp/features/finance/data/datasources/document_data_source.dart';
+
 import '../../domain/entities/financial_document_entity.dart';
 import '../../domain/repositories/document_repository.dart';
-import '../datasources/document_datasource.dart';
 import '../models/document_model.dart';
 
 class DocumentRepositoryImpl implements DocumentRepository {
@@ -39,5 +40,22 @@ class DocumentRepositoryImpl implements DocumentRepository {
   @override
   Future<void> deleteDocument(String id) async {
     await dataSource.deleteDocument(id);
+  }
+
+  @override
+  Future<void> settleDocument(
+    String id,
+    int bankAccountId,
+    int paymentMethodId,
+    double amount,
+    DateTime paymentDate,
+  ) async {
+    await dataSource.settleDocument(
+      id,
+      bankAccountId,
+      paymentMethodId,
+      amount,
+      paymentDate,
+    );
   }
 }

@@ -13,6 +13,8 @@ class FinancialDocumentEntity {
   final DateTime? paymentDate;
   final int categoryId;
   final String partnerId;
+  final int? bankAccountId; // Conta bancária associada ao recebimento/pagamento
+  final int? paymentMethodId; // Método de pagamento (PIX, Boleto, etc.)
   final DocumentStatus status;
   final String? notes;
   final bool isActive;
@@ -20,6 +22,8 @@ class FinancialDocumentEntity {
   // Propriedades extras (úteis para exibir na tabela sem precisar fazer requisições adicionais)
   final String? partnerName;
   final String? categoryName;
+  final String? bankAccountName;
+  final String? paymentMethodName;
 
   FinancialDocumentEntity({
     required this.id,
@@ -37,5 +41,9 @@ class FinancialDocumentEntity {
     this.isActive = true,
     this.partnerName,
     this.categoryName,
+    this.bankAccountId,
+    this.bankAccountName,
+    this.paymentMethodId,
+    this.paymentMethodName,
   });
 }

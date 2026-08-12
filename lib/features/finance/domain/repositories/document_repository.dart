@@ -14,4 +14,11 @@ abstract class DocumentRepository {
     FinancialDocumentEntity document,
   );
   Future<void> deleteDocument(String id);
+  Future<void> settleDocument(
+    String id,
+    int bankAccountId,
+    int paymentMethodId,
+    double amount,
+    DateTime paymentDate,
+  );
 }

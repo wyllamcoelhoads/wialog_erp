@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
+import 'package:wialog_erp/features/finance/domain/entities/financial_document_entity.dart';
+import 'package:wialog_erp/features/finance/presentation/widgets/document_settle_widget.dart';
 import 'package:wialog_erp/features/finance/presentation/widgets/receivable_list_widget.dart';
 
 class ReceivablePage extends StatelessWidget {
@@ -24,8 +26,8 @@ class ReceivablePage extends StatelessWidget {
             ),
           ),
           bottom: TabBar(
-            isScrollable: true, // Permite rolagem se a tela for pequena
-            tabAlignment: TabAlignment.start,
+            //isScrollable: true, // Permite rolagem se a tela for pequena
+            //tabAlignment: TabAlignment.center,
             labelColor: context.appColors.primary,
             unselectedLabelColor: context.appColors.textMuted,
             indicatorColor: context.appColors.primary,
@@ -47,12 +49,7 @@ class ReceivablePage extends StatelessWidget {
             const ReceivableListWidget(),
 
             // ABA 2: Baixa e Conciliação
-            _buildPlaceholder(
-              context,
-              Icons.savings,
-              'Baixas e Recebimentos',
-              'Área para processar o recebimento, selecionando a Conta Bancária destino\ne o método (PIX, Boleto, etc).',
-            ),
+            const DocumentSettleWidget(type: DocumentType.receivable),
 
             // ABA 3: Cobranças
             _buildPlaceholder(

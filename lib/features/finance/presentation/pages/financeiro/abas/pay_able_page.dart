@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
+import 'package:wialog_erp/features/finance/domain/entities/financial_document_entity.dart';
+import 'package:wialog_erp/features/finance/presentation/widgets/document_settle_widget.dart';
 import 'package:wialog_erp/features/finance/presentation/widgets/payable_list_widget.dart';
 
 class PayablePage extends StatelessWidget {
@@ -42,12 +44,7 @@ class PayablePage extends StatelessWidget {
             const PayableListWidget(),
 
             // ABA 2: A sua nova excelente ideia
-            _buildPlaceholder(
-              context,
-              Icons.price_check,
-              'Baixa de Títulos',
-              'Aqui o usuário informará a Conta Bancária, Forma de Pagamento,\nData Real de Pagamento, Juros e Descontos.',
-            ),
+            const DocumentSettleWidget(type: DocumentType.payable),
 
             // ABA 3: Recorrentes
             _buildPlaceholder(
