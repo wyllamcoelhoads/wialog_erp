@@ -4,7 +4,7 @@ import '../../domain/entities/license_entity.dart';
 class LicenseDataSource {
   final DatabaseConnection dbConnection;
 
-  LicenseDataSource({required this.dbConnection});
+  LicenseDataSource(this.dbConnection);
 
   Future<LicenseEntity?> getCurrentLicense() async {
     await _syncWithFirebase();

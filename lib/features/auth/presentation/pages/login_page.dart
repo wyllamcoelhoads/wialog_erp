@@ -31,6 +31,24 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // 👇 NOVA FUNÇÃO: Centraliza a ação de login para ser chamada pelo botão e pelo "Enter"
+  void _performLogin() {
+    // Só tenta logar se não estiver carregando algo e o formulário for válido
+    final authState = context.read<AuthBloc>().state;
+    final licenseState = context.read<LicenseBloc>().state;
+
+    if (authState is AuthLoading || licenseState is LicenseChecking) return;
+
+    if (_formKey.currentState!.validate()) {
+      context.read<AuthBloc>().add(
+        LoginSubmitted(
+          email: _emailController.text,
+          password: _passwordController.text,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,13 +102,14 @@ class _LoginPageState extends State<LoginPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(state.message),
+                                // 👇 CORREÇÃO DO ERRO DE DIGITAÇÃO: context.appColors.error
                                 backgroundColor: context.appColors.error,
                               ),
                             );
                           } else if (state is AuthAuthenticated) {
-                            // Senha bateu! Configura o tema do usuário e CHAMA A LICENÇA
-                            context.read<ThemeCubit>().setTheme(
-                              state.user.theme as ThemeMode,
+                            // 👇 CORREÇÃO DO TEMA: Chamando a função que aceita a String do banco!
+                            context.read<ThemeCubit>().setThemeFromPreference(
+                              state.user.theme,
                             );
                             context.read<LicenseBloc>().add(CheckLicense());
                           }
@@ -101,10 +120,9 @@ class _LoginPageState extends State<LoginPage> {
                       BlocListener<LicenseBloc, LicenseState>(
                         listener: (context, state) {
                           if (state is LicenseValid) {
-                            // Licença OK! Agora sim vai pro sistema.
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Acesso autorizado!'),
+                                content: const Text('Acesso autorizado!'),
                                 backgroundColor: context.appColors.success,
                               ),
                             );
@@ -114,18 +132,16 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             );
                           } else if (state is LicenseBlocked) {
-                            // Licença Bloqueada/Vencida! Abre o Pop-up.
                             showDialog(
                               context: context,
-                              barrierDismissible:
-                                  false, // Prende o usuário aqui
+                              barrierDismissible: false,
                               builder: (ctx) =>
                                   LicenseBlockedDialog(license: state.license),
                             );
                           } else if (state is LicenseError) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Erro ao validar licença.'),
+                                content: const Text('Erro ao validar licença.'),
                                 backgroundColor: context.appColors.error,
                               ),
                             );
@@ -135,7 +151,6 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                     child: BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
-                        // <- Aqui a variável chama 'state' (minúsculo)
                         final isCheckingLicense =
                             context.watch<LicenseBloc>().state
                                 is LicenseChecking;
@@ -166,6 +181,8 @@ class _LoginPageState extends State<LoginPage> {
                                   prefixIcon: Icon(Icons.email_outlined),
                                   border: OutlineInputBorder(),
                                 ),
+                                // 👇 ATALHO DE TECLADO: Se dar enter no email, vai pra senha
+                                textInputAction: TextInputAction.next,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Por favor, insira seu e-mail';
@@ -196,6 +213,8 @@ class _LoginPageState extends State<LoginPage> {
                                     },
                                   ),
                                 ),
+                                // 👇 A MÁGICA DO ENTER AQUI!
+                                onFieldSubmitted: (_) => _performLogin(),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Por favor, insira sua senha';
@@ -209,21 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                               SizedBox(
                                 height: 50,
                                 child: FilledButton(
-                                  // Bloqueia o botão se estiver carregando
-                                  onPressed: isLoading
-                                      ? null
-                                      : () {
-                                          if (_formKey.currentState!
-                                              .validate()) {
-                                            context.read<AuthBloc>().add(
-                                              LoginSubmitted(
-                                                email: _emailController.text,
-                                                password:
-                                                    _passwordController.text,
-                                              ),
-                                            );
-                                          }
-                                        },
+                                  onPressed: isLoading ? null : _performLogin,
                                   child: isLoading
                                       ? const SizedBox(
                                           height: 24,

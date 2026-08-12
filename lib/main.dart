@@ -13,6 +13,7 @@ import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
+import 'package:wialog_erp/features/license/presentation/bloc/license_bloc.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
 import 'dart:io' show Platform;
 
@@ -63,6 +64,7 @@ class WiaLogApp extends StatelessWidget {
         BlocProvider<UserBloc>(create: (context) => sl<UserBloc>()),
         BlocProvider<RoleBloc>(create: (context) => sl<RoleBloc>()),
         BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
+        BlocProvider<LicenseBloc>(create: (_) => sl<LicenseBloc>()),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (context, mode) {
