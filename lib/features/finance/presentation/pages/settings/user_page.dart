@@ -436,7 +436,7 @@ class _UserPageState extends State<UserPage> {
                     ),
                     Switch(
                       value: _showInactive,
-                      activeColor: context.appColors.primary,
+                      activeThumbColor: context.appColors.primary,
                       onChanged: (val) {
                         setState(() => _showInactive = val);
                         context.read<UserBloc>().add(

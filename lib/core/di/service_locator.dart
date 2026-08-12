@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:wialog_erp/core/database/database_connection.dart';
 import 'package:wialog_erp/features/auth/data/datasources/auth_data_source.dart';
 import 'package:wialog_erp/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:wialog_erp/features/auth/domain/repositories/auth_repository.dart';
@@ -31,11 +32,12 @@ import 'package:wialog_erp/features/finance/presentation/bloc/employee/employee_
 import 'package:wialog_erp/features/finance/presentation/bloc/partner/partner_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
+import 'package:wialog_erp/features/license/data/datasources/license_data_source.dart';
+import 'package:wialog_erp/features/license/presentation/bloc/license_bloc.dart';
 import 'package:wialog_erp/features/role/data/datasources/role_data_source.dart';
 import 'package:wialog_erp/features/role/data/repositories/role_repository_impl.dart';
 import 'package:wialog_erp/features/role/domain/repositories/role_repository.dart';
 import 'package:wialog_erp/features/role/presentation/bloc/role_bloc.dart';
-import '../database/database_connection.dart';
 
 final sl = GetIt.instance;
 
@@ -120,4 +122,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<UserDataSource>(() => UserPostgresDataSource(sl()));
   sl.registerLazySingleton<UserRepository>(() => UserRepositoryImpl(sl()));
   sl.registerFactory<UserBloc>(() => UserBloc(sl()));
+
+  sl.registerLazySingleton<LicenseDataSource>(() => LicenseDataSource(sl()));
+  sl.registerFactory<LicenseBloc>(() => LicenseBloc(sl()));
 }
