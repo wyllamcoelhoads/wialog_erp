@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:wialog_erp/core/theme/app_colors.dart';
-import 'package:wialog_erp/core/theme/theme_cubit.dart';
-import 'package:wialog_erp/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
-import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
-import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
-import 'package:wialog_erp/features/finance/presentation/bloc/user/user_event.dart';
+import 'package:get_it/get_it.dart';
+
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/theme_cubit.dart';
+import '../../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../auth/presentation/bloc/auth_event.dart';
+import '../../../domain/entities/user_entity.dart';
+import '../../../domain/repositories/user_repository.dart';
 
 class PreferencesPage extends StatefulWidget {
   const PreferencesPage({super.key});
@@ -32,7 +33,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
     }
   }
 
-  void _savePreferences() {
+  Future<void> _savePreferences() async {
     setState(() => _isLoading = true);
 
     final authState = context.read<AuthBloc>().state;
@@ -50,32 +51,47 @@ class _PreferencesPageState extends State<PreferencesPage> {
         roleName: currentUser.roleName,
         isActive: currentUser.isActive,
         customPermissions: currentUser.customPermissions,
-        theme: _selectedTheme, // AQUI ESTÁ A MUDANÇA PRO BANCO
+        theme: _selectedTheme,
       );
 
-      // 2. Manda pro banco de dados (PostgreSQL) usando o UserBloc
-      context.read<UserBloc>().add(UpdateUser(updatedUser));
+      try {
+        // 2. Chama o Repositório DIRETO (Garante o Update no Postgres com Try/Catch)
+        final repository = GetIt.instance<UserRepository>();
+        await repository.updateUser(updatedUser);
 
-      // 3. Atualiza a sessão atual na memória do app (AuthBloc)
-      context.read<AuthBloc>().add(UpdateCurrentUserData(updatedUser));
+        // 3. Atualiza a sessão atual na memória do app para não perder ao navegar
+        if (mounted) {
+          context.read<AuthBloc>().add(UpdateCurrentUserData(updatedUser));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Preferências salvas com sucesso!'),
-          backgroundColor: context.appColors.success,
-        ),
-      );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Preferências salvas com sucesso!'),
+              backgroundColor: context.appColors.success,
+            ),
+          );
 
-      setState(() {
-        _isLoading = false;
-        _hasChanges = false; // Tira o aviso de alterações pendentes
-      });
+          setState(() {
+            _isLoading = false;
+            _hasChanges = false;
+          });
+        }
+      } catch (e) {
+        // Se o banco der qualquer erro, você verá na tela!
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao salvar no banco: $e'),
+              backgroundColor: context.appColors.error,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Busca os dados do usuário logado na memória do AuthBloc
     final authState = context.watch<AuthBloc>().state;
     if (authState is! AuthAuthenticated) {
       return const Center(child: Text('Erro: Sessão não encontrada.'));
@@ -122,21 +138,17 @@ class _PreferencesPageState extends State<PreferencesPage> {
                       ? _savePreferences
                       : null,
                   icon: _isLoading
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
-                            color: context.appColors.textTitle,
+                            color: Colors.white,
                             strokeWidth: 2,
                           ),
                         )
-                      : Icon(Icons.save, color: context.appColors.textTitle),
+                      : const Icon(Icons.save),
                   label: Text(
                     _isLoading ? 'Salvando...' : 'Salvar Preferências',
-                    style: TextStyle(
-                      color: context.appColors.textTitle,
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: context.appColors.primary,
@@ -210,9 +222,15 @@ class _PreferencesPageState extends State<PreferencesPage> {
                         size: 32,
                         color: context.appColors.primary,
                       ),
+                      // 👇 AQUI RESOLVEMOS O PROBLEMA DO TEXTO! Fica dinâmico agora.
                       title: Text(
-                        'Modo Escuro (Dark Mode)',
-                        style: TextStyle(color: context.appColors.textBody),
+                        _selectedTheme == 'dark'
+                            ? 'Modo Escuro (Dark Mode)'
+                            : 'Modo Claro (Light Mode)',
+                        style: TextStyle(
+                          color: context.appColors.textTitle,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text(
                         'Altera as cores do sistema para reduzir o cansaço visual.',
