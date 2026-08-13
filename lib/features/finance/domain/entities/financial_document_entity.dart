@@ -1,6 +1,6 @@
 enum DocumentType { payable, receivable }
 
-enum DocumentStatus { pending, paid, canceled }
+enum DocumentStatus { pending, partial, paid, canceled }
 
 class FinancialDocumentEntity {
   final String id;

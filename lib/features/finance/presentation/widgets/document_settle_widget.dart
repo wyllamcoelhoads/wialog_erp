@@ -89,6 +89,8 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
   void _selectDocument(FinancialDocumentEntity doc) {
     setState(() {
       _selectedDocument = doc;
+      // 👇 Agora ele sugere pagar o SALDO (balance) e não o valor original (value)
+      _amountController.text = doc.balance.toStringAsFixed(2);
       _amountController.text = doc.value.toStringAsFixed(2);
       _paymentDate = DateTime.now();
       _selectedBankAccountId = doc.bankAccountId;
@@ -400,12 +402,12 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                           }
                           if (state is DocumentLoaded &&
                               state.type == widget.type) {
-                            // Filtra apenas os que NÃO estão pagos ou cancelados
+                            // 👇 Filtra Títulos Pendentes OU Parciais
                             final pendingDocs = state.documents
                                 .where(
                                   (d) =>
-                                      d.status != DocumentStatus.paid &&
-                                      d.status != DocumentStatus.canceled,
+                                      d.status == DocumentStatus.pending ||
+                                      d.status == DocumentStatus.partial,
                                 )
                                 .toList();
 
@@ -464,11 +466,13 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                   subtitle: Text(
                                     'Venc: ${doc.dueDate.day.toString().padLeft(2, '0')}/${doc.dueDate.month.toString().padLeft(2, '0')} | ${doc.description}',
                                   ),
+                                  // 👇 Mostra o saldo devedor na lista esquerda
                                   trailing: Text(
-                                    'R\$ ${doc.value.toStringAsFixed(2)}',
+                                    'Falta:\nR\$ ${doc.balance.toStringAsFixed(2)}',
+                                    textAlign: TextAlign.right,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       color: context.appColors.textTitle,
                                     ),
                                   ),

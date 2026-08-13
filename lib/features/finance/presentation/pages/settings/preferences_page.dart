@@ -146,9 +146,10 @@ class _PreferencesPageState extends State<PreferencesPage> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Icon(Icons.save),
+                      : const Icon(Icons.save, color: Colors.white),
                   label: Text(
                     _isLoading ? 'Salvando...' : 'Salvar Preferências',
+                    style: TextStyle(color: Colors.white),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: context.appColors.primary,

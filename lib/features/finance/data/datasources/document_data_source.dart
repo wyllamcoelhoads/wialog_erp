@@ -133,33 +133,49 @@ class DocumentPostgresDataSource implements DocumentDataSource {
   ) async {
     await dbConnection.query('BEGIN');
     try {
+      // 👇 1. Buscamos o saldo atual (balance) do banco de dados
       final docResult = await dbConnection.query(
-        'SELECT type, status FROM financial_documents WHERE id = @id',
+        'SELECT type, status, balance FROM financial_documents WHERE id = @id',
         {'id': id},
       );
       if (docResult.isEmpty) throw Exception('Documento não encontrado.');
 
       final row = docResult.first.toColumnMap();
       if (row['status'] == 'paid')
-        throw Exception('Este documento já consta como pago.');
+        throw Exception('Este documento já consta como pago totalmente.');
 
       final isReceivable = row['type'] == 'receivable';
+      final currentBalance = double.parse(row['balance'].toString());
 
+      // 👇 2. A Lógica Matemática da Baixa Parcial
+      double newBalance = currentBalance - amount;
+      String newStatus = 'partial';
+
+      // Se pagou tudo (ou até passou um pouco por erro), zera o saldo e liquida
+      if (newBalance <= 0) {
+        newBalance = 0.0;
+        newStatus = 'paid';
+      }
+
+      // 👇 3. Atualizamos a duplicata com os novos valores
       await dbConnection.query(
         '''
         UPDATE financial_documents 
-        SET status = 'paid', balance = 0, payment_date = @payment_date,
+        SET status = @status, balance = @balance, payment_date = @payment_date,
             bank_account_id = @bank_account_id, payment_method_id = @payment_method_id
         WHERE id = @id
       ''',
         {
           'id': id,
+          'status': newStatus,
+          'balance': newBalance,
           'payment_date': paymentDate.toIso8601String().split('T')[0],
           'bank_account_id': bankAccountId,
           'payment_method_id': paymentMethodId,
         },
       );
 
+      // 4. Atualiza o Saldo da Conta Bancária (+ se for receita, - se for despesa)
       final operator = isReceivable ? '+' : '-';
       await dbConnection.query(
         '''

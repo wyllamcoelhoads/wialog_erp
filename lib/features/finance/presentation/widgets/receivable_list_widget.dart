@@ -196,12 +196,12 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
+                color: context.appColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.appColors.border),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: BlocBuilder<DocumentBloc, DocumentState>(
                   builder: (context, state) {
                     // MUDANÇA: Tratamento do estado Inicial e bloqueio de vazamento de dados de Despesas
@@ -308,20 +308,64 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
                                 }
                               },
                               cells: [
-                                DataCell(Text(receita.id)),
                                 DataCell(
                                   Text(
-                                    receita.description,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
+                                    receita.id,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: context.appColors.textBody,
                                     ),
                                   ),
                                 ),
-                                DataCell(Text(receita.partnerName ?? 'N/A')),
-                                DataCell(Text(dateStr)),
                                 DataCell(
                                   Text(
-                                    'R\$ ${receita.value.toStringAsFixed(2)}',
+                                    receita.description,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: context.appColors.textBody,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    receita.partnerName ?? 'N/A',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: context.appColors.textBody,
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    dateStr,
+                                    style: TextStyle(
+                                      color: context.appColors.textBody,
+                                    ),
+                                  ),
+                                ),
+                                // 👇 Mostra o Valor Total e o Saldo logo abaixo
+                                DataCell(
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'R\$ ${receita.value.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (receita.status ==
+                                          DocumentStatus.partial)
+                                        Text(
+                                          'Falta: R\$ ${receita.balance.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.appColors.textMuted,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 DataCell(
@@ -348,7 +392,7 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
   }
 
   Widget _buildStatusChip(DocumentStatus status, DateTime dueDate) {
-    Color bgColor = context.appColors.info.withValues(alpha: 0.1);
+    Color bgColor = context.appColors.surface.withValues(alpha: 0.1);
     Color textColor = context.appColors.info;
     String label = 'A Receber';
 
@@ -356,6 +400,10 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       bgColor = context.appColors.success.withValues(alpha: 0.1);
       textColor = context.appColors.success;
       label = 'Recebido';
+    } else if (status == DocumentStatus.partial) {
+      bgColor = context.appColors.info.withValues(alpha: 0.1);
+      textColor = context.appColors.info;
+      label = 'Parcial';
     } else if (status == DocumentStatus.canceled) {
       bgColor = context.appColors.textMuted.withValues(alpha: 0.1);
       textColor = context.appColors.textMuted;
@@ -372,7 +420,8 @@ class _ReceivableListWidgetState extends State<ReceivableListWidget> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.appColors.border),
       ),
       child: Text(
         label,

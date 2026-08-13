@@ -312,8 +312,30 @@ class _PayableListWidgetState extends State<PayableListWidget> {
                                 ),
                                 DataCell(Text(conta.partnerName ?? 'N/A')),
                                 DataCell(Text(dateStr)),
+                                // 👇 Mostra o Valor Total e o Saldo logo abaixo
                                 DataCell(
-                                  Text('R\$ ${conta.value.toStringAsFixed(2)}'),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'R\$ ${conta.value.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (conta.status ==
+                                          DocumentStatus.partial)
+                                        Text(
+                                          'Resta: R\$ ${conta.balance.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.appColors.textMuted,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                                 DataCell(
                                   _buildStatusChip(conta.status, conta.dueDate),
@@ -344,6 +366,10 @@ class _PayableListWidgetState extends State<PayableListWidget> {
       bgColor = context.appColors.success.withValues(alpha: 0.1);
       textColor = context.appColors.success;
       label = 'Pago';
+    } else if (status == DocumentStatus.partial) {
+      bgColor = context.appColors.info.withValues(alpha: 0.1);
+      textColor = context.appColors.info;
+      label = 'Parcial';
     } else if (status == DocumentStatus.canceled) {
       bgColor = context.appColors.textMuted.withValues(alpha: 0.1);
       textColor = context.appColors.textMuted;

@@ -51,7 +51,9 @@ class DocumentModel extends FinancialDocumentEntity {
           ? DocumentStatus.paid
           : (map['status'] == 'canceled'
                 ? DocumentStatus.canceled
-                : DocumentStatus.pending),
+                : (map['status'] == 'partial'
+                      ? DocumentStatus.partial
+                      : DocumentStatus.pending)),
       notes: map['notes'],
       isActive: map['is_active'] ?? true,
       partnerName: map['partner_name'], // Trazido pelo JOIN no SQL
