@@ -1,36 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart'; // Para acessar o repositório direto na aba de histórico
+import 'package:get_it/get_it.dart';
+import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/features/finance/SettlementEntity/domain/entities/settlement_entity.dart';
+import 'package:wialog_erp/features/finance/domain/entities/category_entity.dart';
+import 'package:wialog_erp/features/finance/domain/entities/financial_document_entity.dart';
+import 'package:wialog_erp/features/finance/domain/entities/partner_entity.dart';
+import 'package:wialog_erp/features/finance/domain/repositories/document_repository.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_state.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/category/category_state.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/document/document_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/document/document_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/document/document_state.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/partner/partner_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/partner/partner_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/partner/partner_state.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_bloc.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_event.dart';
+import 'package:wialog_erp/features/finance/presentation/bloc/payment_method/payment_method_state.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'dart:math';
-
-import '../../../../core/theme/app_colors.dart';
-
-import '../../domain/entities/category_entity.dart';
-import '../../domain/entities/partner_entity.dart';
-import '../../domain/entities/financial_document_entity.dart'; // NOVO IMPORT
-import '../../domain/repositories/document_repository.dart'; // NOVO IMPORT
-
-import '../bloc/category/category_bloc.dart';
-import '../bloc/category/category_event.dart';
-import '../bloc/category/category_state.dart';
-
-import '../bloc/partner/partner_bloc.dart';
-import '../bloc/partner/partner_event.dart';
-import '../bloc/partner/partner_state.dart';
-
-import '../bloc/document/document_bloc.dart';
-import '../bloc/document/document_event.dart';
-import '../bloc/document/document_state.dart';
-
-import '../bloc/bank_account/bank_account_bloc.dart';
-import '../bloc/bank_account/bank_account_event.dart';
-import '../bloc/bank_account/bank_account_state.dart';
-import '../bloc/payment_method/payment_method_bloc.dart';
-import '../bloc/payment_method/payment_method_event.dart';
-import '../bloc/payment_method/payment_method_state.dart';
 
 class DocumentFormPage extends StatefulWidget {
   final Map<String, dynamic>? document;
@@ -352,13 +346,133 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
         fillColor: readOnly
-            ? context.appColors.textMuted.withOpacity(0.05)
+            ? context.appColors.textMuted.withValues(alpha: 0.05)
             : null,
         filled: readOnly,
       ),
       validator: isRequired
           ? (value) => (value == null || value.isEmpty) ? 'Obrigatório' : null
           : null,
+    );
+  }
+
+  // 👇 NOVA FUNÇÃO: Etiqueta Visual de Status
+  Widget _buildStatusBadge(String status, DateTime? dueDate) {
+    Color bgColor = context.appColors.warning.withValues(alpha: 0.1);
+    Color textColor = context.appColors.warning;
+    String label = 'PENDENTE';
+
+    if (status == 'paid') {
+      bgColor = context.appColors.success.withValues(alpha: 0.1);
+      textColor = context.appColors.success;
+      label = 'PAGO';
+    } else if (status == 'partial') {
+      bgColor = context.appColors.info.withValues(alpha: 0.1);
+      textColor = context.appColors.info;
+      label = 'PARCIAL';
+    } else if (status == 'canceled') {
+      bgColor = context.appColors.textMuted.withValues(alpha: 0.1);
+      textColor = context.appColors.textMuted;
+      label = 'CANCELADO';
+    } else if (dueDate != null &&
+        dueDate.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
+      bgColor = context.appColors.error.withValues(alpha: 0.1);
+      textColor = context.appColors.error;
+      label = 'ATRASADO';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  // 👇 NOVA FUNÇÃO: Colunas do Resumo
+  Widget _buildSummaryColumn(String label, double value, Color valueColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, color: context.appColors.textMuted),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'R\$ ${value.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 👇 NOVA FUNÇÃO: O Card de Resumo Financeiro
+  Widget _buildFinancialSummaryCard(
+    double total,
+    double pago,
+    double saldo,
+    String status,
+  ) {
+    return Card(
+      color: context.appColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: context.appColors.border.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _buildStatusBadge(status, _selectedDueDate),
+            const SizedBox(width: 32),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSummaryColumn(
+                  'Valor Original',
+                  total,
+                  context.appColors.textMuted,
+                ),
+                const SizedBox(width: 48),
+                _buildSummaryColumn(
+                  'Total Pago/Recebido',
+                  pago,
+                  widget.isReceivable
+                      ? context.appColors.success
+                      : context.appColors.error,
+                ),
+                const SizedBox(width: 48),
+                _buildSummaryColumn(
+                  'Saldo Restante',
+                  saldo,
+                  context.appColors.textTitle,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -369,6 +483,22 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         : (widget.isReceivable
               ? 'Nova Receita (Faturamento)'
               : 'Novo Lançamento (Despesa)');
+
+    // Lógica para Calcular os Valores do Resumo
+    double valorTotal = 0.0;
+    double saldo = 0.0;
+    double valorPago = 0.0;
+    String statusStr = 'pending';
+
+    if (_isEditing && widget.document != null) {
+      valorTotal =
+          double.tryParse(widget.document!['value']?.toString() ?? '0') ?? 0.0;
+      saldo =
+          double.tryParse(widget.document!['balance']?.toString() ?? '0') ??
+          0.0;
+      valorPago = valorTotal - saldo;
+      statusStr = widget.document!['status']?.toString() ?? 'pending';
+    }
 
     final formContent = BlocListener<DocumentBloc, DocumentState>(
       listener: (context, state) {
@@ -401,6 +531,17 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // 👇 AQUI NÓS INSERIMOS O CARD DE RESUMO SE ESTIVER EDITANDO
+                  if (_isEditing) ...[
+                    _buildFinancialSummaryCard(
+                      valorTotal,
+                      valorPago,
+                      saldo,
+                      statusStr,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
                     child: Text(
@@ -451,7 +592,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 ),
                               ),
                               const SizedBox(width: 24),
-                              // ❌ IMPEDIR ALTERAÇÃO DO VALOR SE JÁ ESTIVER EDITANDO E TIVER PAGO ALGO
                               Expanded(
                                 flex: 1,
                                 child: _buildTextField(
@@ -460,7 +600,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                   icon: Icons.attach_money,
                                   isRequired: true,
                                   isNumeric: true,
-                                  readOnly: _isEditing,
+                                  readOnly:
+                                      _isEditing, // 🔒 Já estava bloqueado
                                 ),
                               ),
                             ],
@@ -804,7 +945,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                                 decoration: BoxDecoration(
                                   border: Border.all(
                                     color: context.appColors.textMuted
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                   ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -1090,6 +1231,13 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                               context.appColors.background,
                             ),
                             columns: const [
+                              // 👇 Adicionada a coluna de ID
+                              DataColumn(
+                                label: Text(
+                                  'ID da Baixa',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
                               DataColumn(
                                 label: Text(
                                   'Data da Baixa',
@@ -1118,6 +1266,15 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
                             rows: history.map((h) {
                               return DataRow(
                                 cells: [
+                                  // 👇 Mostrando o ID no histórico
+                                  DataCell(
+                                    Text(
+                                      '#${h.id}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                   DataCell(
                                     Text(
                                       '${h.paymentDate.day.toString().padLeft(2, '0')}/${h.paymentDate.month.toString().padLeft(2, '0')}/${h.paymentDate.year}',
