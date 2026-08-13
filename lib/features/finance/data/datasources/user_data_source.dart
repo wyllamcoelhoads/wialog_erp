@@ -36,8 +36,15 @@ class UserPostgresDataSource implements UserDataSource {
       VALUES (@employee_id, @email, @password, @role_id, @theme, @custom_permissions, @is_active)
       RETURNING *;
     ''';
-    final params = user.toMap();
-    params.remove('employee_id');
+    final params = {
+      'id': user.id,
+      'email': user.email,
+      'password': user.password,
+      'role_id': user.roleId,
+      'theme': user.theme,
+      'custom_permissions': user.customPermissions,
+      'is_active': user.isActive,
+    };
     final result = await dbConnection.query(sql, params);
     return UserModel.fromMap(result.first.toColumnMap());
   }
@@ -52,8 +59,15 @@ class UserPostgresDataSource implements UserDataSource {
     ''';
 
     // Pegamos os dados do Model
-    final params = user.toMap();
-    params.remove('employee_id');
+    final params = {
+      'id': user.id,
+      'email': user.email,
+      'password': user.password,
+      'role_id': user.roleId,
+      'theme': user.theme,
+      'custom_permissions': user.customPermissions,
+      'is_active': user.isActive,
+    };
     final result = await dbConnection.query(sql, params);
     return UserModel.fromMap(result.first.toColumnMap());
   }
