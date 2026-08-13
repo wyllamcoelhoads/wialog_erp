@@ -1,9 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
-
-// NOVO: Importando o repositório
-import '../../domain/repositories/auth_repository.dart';
 
 // No padrão BLoC convencional, isso ficaria em auth_event.dart
 abstract class AuthEvent extends Equatable {
@@ -21,6 +17,16 @@ class LoginSubmitted extends AuthEvent {
 
   @override
   List<Object> get props => [email, password];
+}
+
+// Atualiza os dados do usuário na memória (Sessão)
+class UpdateCurrentUserData extends AuthEvent {
+  final UserEntity updatedUser;
+
+  const UpdateCurrentUserData(this.updatedUser);
+
+  @override
+  List<Object> get props => [updatedUser];
 }
 
 // No padrão BLoC convencional, isso ficaria em auth_state.dart
@@ -51,43 +57,4 @@ class AuthError extends AuthState {
 
   @override
   List<Object> get props => [message];
-}
-
-class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final AuthRepository repository; // NOVO: Injeção do repositório
-
-  AuthBloc(this.repository) : super(AuthInitial()) {
-    on<LoginSubmitted>(_onLoginSubmitted);
-  }
-
-  Future<void> _onLoginSubmitted(
-    LoginSubmitted event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-
-    try {
-      // Bate no banco de dados real
-      final user = await repository.authenticate(event.email, event.password);
-
-      if (user == null) {
-        // Se retornou nulo, é porque e-mail ou senha não bateram
-        emit(const AuthError(message: 'E-mail ou senha inválidos.'));
-      } else if (!user.isActive) {
-        // Se achou o usuário, mas isActive é false (Bloqueado)
-        emit(
-          const AuthError(
-            message: 'Seu acesso está bloqueado. Contate o administrador.',
-          ),
-        );
-      } else {
-        // Se passou em tudo, logado com sucesso!
-        emit(
-          AuthAuthenticated(user: user),
-        ); // NOVO: Passando o usuário completo para o estado
-      }
-    } catch (e) {
-      emit(AuthError(message: 'Erro de conexão com o banco de dados.'));
-    }
-  }
 }
