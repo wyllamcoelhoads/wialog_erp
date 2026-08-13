@@ -1,3 +1,4 @@
+import 'package:wialog_erp/features/finance/SettlementEntity/domain/entities/settlement_entity.dart';
 import 'package:wialog_erp/features/finance/data/datasources/document_data_source.dart';
 
 import '../../domain/entities/financial_document_entity.dart';
@@ -61,5 +62,10 @@ class DocumentRepositoryImpl implements DocumentRepository {
       amount,
       paymentDate,
     );
+  }
+
+  @override
+  Future<List<SettlementEntity>> getSettlements(String documentId) async {
+    return await dataSource.getSettlements(documentId);
   }
 }

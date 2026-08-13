@@ -174,6 +174,9 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
         ? context.appColors.success
         : context.appColors.error;
     final actionLabel = isReceivable ? 'Receber Título' : 'Pagar Título';
+    final colorBalance = isReceivable
+        ? context.appColors.success
+        : context.appColors.error;
 
     return BlocListener<DocumentBloc, DocumentState>(
       listener: (context, state) {
@@ -531,7 +534,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                         ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(32.0), // Mais padding
                         child: Form(
                           key: _formKey,
                           child: Column(
@@ -540,7 +543,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                               Text(
                                 'Processar $actionLabel',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: context.appColors.textTitle,
                                 ),
@@ -550,69 +553,102 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                 '${_selectedDocument!.id} - ${_selectedDocument!.description}',
                                 style: TextStyle(
                                   color: context.appColors.textMuted,
+                                  fontSize: 16,
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 32),
 
+                              // 👇 PAINEL DE VALORES MELHORADO (3 Status)
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: context.appColors.background,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Valor Original:',
-                                      style: TextStyle(
-                                        color: context.appColors.textBody,
-                                      ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Valor Original:',
+                                          style: TextStyle(
+                                            color: context.appColors.textMuted,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          'R\$ ${_selectedDocument!.value.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: context.appColors.textTitle,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      'R\$ ${_selectedDocument!.value.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.appColors.textTitle,
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 12,
                                       ),
+                                      child: Divider(height: 1),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Valor em Aberto:',
-                                      style: TextStyle(
-                                        color: context.appColors.textBody,
-                                      ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Total já Pago:',
+                                          style: TextStyle(
+                                            color: context.appColors.textMuted,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          'R\$ ${(_selectedDocument!.value - _selectedDocument!.balance).toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: context.appColors.primary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      'R\$ ${_selectedDocument!.balance.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.appColors.textTitle,
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 12,
                                       ),
+                                      child: Divider(height: 1),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Valor Pago:',
-                                      style: TextStyle(
-                                        color: context.appColors.textBody,
-                                      ),
-                                    ),
-                                    Text(
-                                      'R\$ ${(_selectedDocument!.value - _selectedDocument!.balance).toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: context.appColors.textTitle,
-                                      ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Valor em Aberto:',
+                                          style: TextStyle(
+                                            color: context.appColors.textTitle,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          'R\$ ${_selectedDocument!.balance.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: colorBalance,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 32),
 
+                              // CAMPOS DE ENTRADA
                               Row(
                                 children: [
                                   Expanded(
@@ -646,7 +682,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                         ),
                                       ],
                                       decoration: const InputDecoration(
-                                        labelText: 'Valor Pago/Recebido (R\$)',
+                                        labelText: 'Valor Desta Baixa (R\$)',
                                         prefixIcon: Icon(Icons.attach_money),
                                         border: OutlineInputBorder(),
                                       ),
@@ -659,9 +695,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                               val.replaceAll(',', '.'),
                                             ) ??
                                             0.0;
-                                        if (amt <= 0) {
-                                          return 'Deve ser maior que zero';
-                                        }
+                                        if (amt <= 0) return 'Maior que zero';
                                         if (_selectedDocument != null &&
                                             amt > _selectedDocument!.balance) {
                                           return 'Máx: R\$ ${_selectedDocument!.balance.toStringAsFixed(2)}';
@@ -672,7 +706,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
 
                               BlocBuilder<BankAccountBloc, BankAccountState>(
                                 builder: (context, state) {
@@ -715,7 +749,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                   return const LinearProgressIndicator();
                                 },
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
 
                               BlocBuilder<
                                 PaymentMethodBloc,
@@ -763,7 +797,8 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
 
                               const Spacer(),
                               SizedBox(
-                                height: 50,
+                                height:
+                                    56, // Botão um pouco mais alto e imponente
                                 child: FilledButton.icon(
                                   onPressed: _isProcessing
                                       ? null
@@ -782,6 +817,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                     _isProcessing
                                         ? 'Processando...'
                                         : 'Confirmar $actionLabel',
+                                    style: const TextStyle(fontSize: 16),
                                   ),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: primaryColor,

@@ -1,3 +1,5 @@
+import 'package:wialog_erp/features/finance/SettlementEntity/domain/entities/settlement_entity.dart';
+
 import '../entities/financial_document_entity.dart';
 
 abstract class DocumentRepository {
@@ -23,4 +25,5 @@ abstract class DocumentRepository {
     double amount,
     DateTime paymentDate,
   );
+  Future<List<SettlementEntity>> getSettlements(String documentId);
 }

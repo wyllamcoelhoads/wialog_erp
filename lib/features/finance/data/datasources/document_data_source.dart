@@ -1,3 +1,5 @@
+import 'package:wialog_erp/features/finance/SettlementEntity/data/models/settlement_model.dart';
+
 import '../../../../core/database/database_connection.dart';
 import '../models/document_model.dart';
 import '../../domain/entities/financial_document_entity.dart';
@@ -21,6 +23,8 @@ abstract class DocumentDataSource {
     double amount,
     DateTime paymentDate,
   );
+
+  Future<List<SettlementModel>> getSettlements(String documentId);
 }
 
 class DocumentPostgresDataSource implements DocumentDataSource {
@@ -133,7 +137,6 @@ class DocumentPostgresDataSource implements DocumentDataSource {
   ) async {
     await dbConnection.query('BEGIN');
     try {
-      // 👇 1. Buscamos o saldo atual (balance) do banco de dados
       final docResult = await dbConnection.query(
         'SELECT type, status, balance FROM financial_documents WHERE id = @id',
         {'id': id},
@@ -141,23 +144,37 @@ class DocumentPostgresDataSource implements DocumentDataSource {
       if (docResult.isEmpty) throw Exception('Documento não encontrado.');
 
       final row = docResult.first.toColumnMap();
-      if (row['status'] == 'paid')
+      if (row['status'] == 'paid') {
         throw Exception('Este documento já consta como pago totalmente.');
+      }
 
       final isReceivable = row['type'] == 'receivable';
       final currentBalance = double.parse(row['balance'].toString());
 
-      // 👇 2. A Lógica Matemática da Baixa Parcial
+      // 1. Grava no Histórico ANTES de mudar o saldo
+      await dbConnection.query(
+        '''
+        INSERT INTO financial_settlements (document_id, amount, payment_date, bank_account_id, payment_method_id)
+        VALUES (@doc_id, @amount, @date, @bank, @method)
+      ''',
+        {
+          'doc_id': id,
+          'amount': amount,
+          'date': paymentDate.toIso8601String().split('T')[0],
+          'bank': bankAccountId,
+          'method': paymentMethodId,
+        },
+      );
+
+      // 2. Calcula Novo Saldo
       double newBalance = currentBalance - amount;
       String newStatus = 'partial';
-
-      // Se pagou tudo (ou até passou um pouco por erro), zera o saldo e liquida
       if (newBalance <= 0) {
         newBalance = 0.0;
         newStatus = 'paid';
       }
 
-      // 👇 3. Atualizamos a duplicata com os novos valores
+      // 3. Atualiza a duplicata
       await dbConnection.query(
         '''
         UPDATE financial_documents 
@@ -175,7 +192,7 @@ class DocumentPostgresDataSource implements DocumentDataSource {
         },
       );
 
-      // 4. Atualiza o Saldo da Conta Bancária (+ se for receita, - se for despesa)
+      // 4. Atualiza o Banco
       final operator = isReceivable ? '+' : '-';
       await dbConnection.query(
         '''
@@ -191,5 +208,21 @@ class DocumentPostgresDataSource implements DocumentDataSource {
       await dbConnection.query('ROLLBACK');
       rethrow;
     }
+  }
+
+  @override
+  Future<List<SettlementModel>> getSettlements(String documentId) async {
+    const sql = '''
+      SELECT s.*, b.description as bank_name, pm.name as method_name
+      FROM financial_settlements s
+      JOIN bank_accounts b ON s.bank_account_id = b.id
+      JOIN payment_methods pm ON s.payment_method_id = pm.id
+      WHERE s.document_id = @docId
+      ORDER BY s.created_at DESC
+    ''';
+    final result = await dbConnection.query(sql, {'docId': documentId});
+    return result
+        .map((row) => SettlementModel.fromMap(row.toColumnMap()))
+        .toList();
   }
 }

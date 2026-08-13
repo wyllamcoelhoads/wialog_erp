@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart'; // Para acessar o repositório direto na aba de histórico
+import 'package:wialog_erp/features/finance/SettlementEntity/domain/entities/settlement_entity.dart';
 import 'package:wialog_erp/features/finance/presentation/pages/dashboard_page.dart';
 import 'dart:math';
 
@@ -8,7 +10,8 @@ import '../../../../core/theme/app_colors.dart';
 
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/partner_entity.dart';
-import '../../domain/entities/financial_document_entity.dart';
+import '../../domain/entities/financial_document_entity.dart'; // NOVO IMPORT
+import '../../domain/repositories/document_repository.dart'; // NOVO IMPORT
 
 import '../bloc/category/category_bloc.dart';
 import '../bloc/category/category_event.dart';
@@ -22,7 +25,6 @@ import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
 
-// NOVO: Precisamos buscar as contas bancárias e moedas para preencher os Dropdowns
 import '../bloc/bank_account/bank_account_bloc.dart';
 import '../bloc/bank_account/bank_account_event.dart';
 import '../bloc/bank_account/bank_account_state.dart';
@@ -57,7 +59,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
   String? _selectedPartnerId;
   String _installmentInterval = 'Mensal';
 
-  // NOVO
   int? _selectedBankAccountId;
   int? _selectedPaymentMethodId;
 
@@ -78,7 +79,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     context.read<CategoryBloc>().add(LoadCategories(type: categoryType));
     context.read<PartnerBloc>().add(LoadPartners(type: partnerType));
 
-    // NOVO: Carrega as listas de contas e moedas
     context.read<BankAccountBloc>().add(const LoadBankAccounts());
     context.read<PaymentMethodBloc>().add(const LoadPaymentMethods());
 
@@ -90,8 +90,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     if (_isEditing && doc != null) {
       _selectedCategoryId = doc['category_id'] as int?;
       _selectedPartnerId = doc['partner_id'] as String?;
-      _selectedBankAccountId = doc['bank_account_id'] as int?; // NOVO
-      _selectedPaymentMethodId = doc['payment_method_id'] as int?; // NOVO
+      _selectedBankAccountId = doc['bank_account_id'] as int?;
+      _selectedPaymentMethodId = doc['payment_method_id'] as int?;
       if (doc['due_date'] != null) {
         _selectedDueDate = DateTime.parse(doc['due_date'].toString());
       }
@@ -115,7 +115,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     super.dispose();
   }
 
-  // Helper de Datas para resolver o bug do dia 31 (Ex: 31/08 -> 30/09 e não 01/10)
   DateTime _addMonthsFixed(DateTime date, int monthsToAdd) {
     int newYear = date.year;
     int newMonth = date.month + monthsToAdd;
@@ -125,16 +124,12 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       newMonth -= 12;
     }
 
-    // Descobre qual é o último dia do novo mês gerado
     int lastDayOfNewMonth = DateTime(newYear, newMonth + 1, 0).day;
-
-    // Se o dia original for maior que o último dia do mês alvo, trava no último dia
     int newDay = date.day > lastDayOfNewMonth ? lastDayOfNewMonth : date.day;
 
     return DateTime(newYear, newMonth, newDay);
   }
 
-  // Gera o Preview das parcelas
   void _generatePreview() {
     if (!_formKey.currentState!.validate() ||
         _selectedDueDate == null ||
@@ -163,7 +158,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       String docId = parcelas == 1 ? _documentId : '$_documentId-$i';
       DateTime dueDateParcela;
 
-      // Cálculo de intervalo inteligente
       if (_installmentInterval == 'Mensal') {
         dueDateParcela = _addMonthsFixed(_selectedDueDate!, i - 1);
       } else if (_installmentInterval == 'Quinzenal') {
@@ -171,7 +165,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       } else if (_installmentInterval == 'Semanal') {
         dueDateParcela = _selectedDueDate!.add(Duration(days: 7 * (i - 1)));
       } else {
-        // Diário
         dueDateParcela = _selectedDueDate!.add(Duration(days: i - 1));
       }
 
@@ -192,8 +185,8 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           dueDate: dueDateParcela,
           categoryId: _selectedCategoryId!,
           partnerId: _selectedPartnerId!,
-          bankAccountId: _selectedBankAccountId, // NOVO
-          paymentMethodId: _selectedPaymentMethodId, // NOVO
+          bankAccountId: _selectedBankAccountId,
+          paymentMethodId: _selectedPaymentMethodId,
           status: DocumentStatus.pending,
         ),
       );
@@ -204,7 +197,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     });
   }
 
-  // Altera a data de uma parcela específica na grid
   Future<void> _editPreviewDate(int index) async {
     final current = _previewInstallments[index].dueDate;
     final DateTime? picked = await showDatePicker(
@@ -224,7 +216,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
 
     if (picked != null && picked != current) {
       setState(() {
-        // Recria a entidade com a nova data
         final old = _previewInstallments[index];
         _previewInstallments[index] = FinancialDocumentEntity(
           id: old.id,
@@ -237,7 +228,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           categoryId: old.categoryId,
           partnerId: old.partnerId,
           bankAccountId: old.bankAccountId,
-          paymentMethodId: old.paymentMethodId, // NOVO
+          paymentMethodId: old.paymentMethodId,
           status: old.status,
         );
       });
@@ -258,600 +249,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final String pageTitle = _isEditing
-        ? 'Documento #${widget.document!['id']}'
-        : (widget.isReceivable
-              ? 'Nova Receita (Faturamento)'
-              : 'Novo Lançamento (Despesa)');
-
-    return Scaffold(
-      backgroundColor: context.appColors.background,
-      appBar: AppBar(
-        backgroundColor: context.appColors.surface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        automaticallyImplyLeading: false,
-        title: Text(
-          pageTitle,
-          style: TextStyle(
-            color: context.appColors.textTitle,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: BlocListener<DocumentBloc, DocumentState>(
-        listener: (context, state) {
-          if (state is DocumentError && _isSaving) {
-            setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: context.appColors.error,
-              ),
-            );
-          } else if (state is DocumentLoaded && _isSaving) {
-            setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Documentos salvos com sucesso!'),
-                backgroundColor: context.appColors.success,
-              ),
-            );
-            _closeTab(context);
-          }
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // INFORMAÇÕES PRINCIPAIS
-                    _buildSectionTitle('Informações Principais'),
-                    Card(
-                      color: context.appColors.surface,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: context.appColors.textMuted.withValues(
-                            alpha: 0.2,
-                          ),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 1,
-                                  child: _buildTextField(
-                                    controller: TextEditingController(
-                                      text: _documentId,
-                                    ),
-                                    label: 'Nº Documento',
-                                    icon: Icons.tag,
-                                    readOnly: true,
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  flex: 3,
-                                  child: _buildTextField(
-                                    controller: _descriptionController,
-                                    label: 'Descrição do Lançamento',
-                                    icon: Icons.description_outlined,
-                                    isRequired: true,
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  flex: 1,
-                                  child: _buildTextField(
-                                    controller: _valueController,
-                                    label: 'Valor Total (R\$)',
-                                    icon: Icons.attach_money,
-                                    isRequired: true,
-                                    isNumeric: true,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: BlocBuilder<CategoryBloc, CategoryState>(
-                                    builder: (context, state) {
-                                      if (state is CategoryLoaded) {
-                                        final bool exists = state.categories
-                                            .any(
-                                              (c) =>
-                                                  c.id == _selectedCategoryId,
-                                            );
-                                        return DropdownButtonFormField<int>(
-                                          isExpanded:
-                                              true, // <-- MUDANÇA AQUI: Evita quebra de tela
-                                          initialValue: exists
-                                              ? _selectedCategoryId
-                                              : null,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Categoria',
-                                            prefixIcon: Icon(
-                                              Icons.category_outlined,
-                                            ),
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          items: state.categories
-                                              .map(
-                                                (cat) => DropdownMenuItem(
-                                                  value: cat.id,
-                                                  child: Text(
-                                                    cat.name,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(), // <-- MUDANÇA AQUI: Adiciona os ...
-                                          onChanged: (val) => setState(
-                                            () => _selectedCategoryId = val,
-                                          ),
-                                          validator: (val) => val == null
-                                              ? 'Obrigatório'
-                                              : null,
-                                        );
-                                      }
-                                      return const CircularProgressIndicator();
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: BlocBuilder<PartnerBloc, PartnerState>(
-                                    builder: (context, state) {
-                                      if (state is PartnerLoaded) {
-                                        final bool exists = state.partners.any(
-                                          (p) => p.id == _selectedPartnerId,
-                                        );
-                                        return DropdownButtonFormField<String>(
-                                          isExpanded: true, // <-- MUDANÇA AQUI
-                                          value: exists
-                                              ? _selectedPartnerId
-                                              : null,
-                                          decoration: InputDecoration(
-                                            labelText: widget.isReceivable
-                                                ? 'Cliente'
-                                                : 'Fornecedor',
-                                            prefixIcon: const Icon(
-                                              Icons.business,
-                                            ),
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          items: state.partners
-                                              .map(
-                                                (p) => DropdownMenuItem(
-                                                  value: p.id,
-                                                  child: Text(
-                                                    p.name,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(), // <-- MUDANÇA AQUI
-                                          onChanged: (val) => setState(
-                                            () => _selectedPartnerId = val,
-                                          ),
-                                          validator: (val) => val == null
-                                              ? 'Obrigatório'
-                                              : null,
-                                        );
-                                      }
-                                      return const CircularProgressIndicator();
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () => _selectDate(context),
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        labelText: 'Data Base / 1º Venc.',
-                                        prefixIcon: const Icon(
-                                          Icons.calendar_today,
-                                        ),
-                                        border: const OutlineInputBorder(),
-                                        errorText: _selectedDueDate == null
-                                            ? 'Obrigatório'
-                                            : null,
-                                      ),
-                                      child: Text(
-                                        _selectedDueDate == null
-                                            ? 'Selecionar'
-                                            : '${_selectedDueDate!.day.toString().padLeft(2, '0')}/${_selectedDueDate!.month.toString().padLeft(2, '0')}/${_selectedDueDate!.year}',
-                                        overflow: TextOverflow.ellipsis,
-                                      ), // <-- MUDANÇA AQUI
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            // NOVO BLOCO (Opcional no momento da criação)
-                            const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child:
-                                      BlocBuilder<
-                                        BankAccountBloc,
-                                        BankAccountState
-                                      >(
-                                        builder: (context, state) {
-                                          if (state is BankAccountLoaded) {
-                                            final bool exists = state.accounts
-                                                .any(
-                                                  (a) =>
-                                                      a.id ==
-                                                      _selectedBankAccountId,
-                                                );
-                                            return DropdownButtonFormField<int>(
-                                              isExpanded: true,
-                                              initialValue: exists
-                                                  ? _selectedBankAccountId
-                                                  : null,
-                                              decoration: const InputDecoration(
-                                                labelText:
-                                                    'Conta Bancária de Previsão (Opcional)',
-                                                prefixIcon: Icon(
-                                                  Icons.account_balance,
-                                                ),
-                                                border: OutlineInputBorder(),
-                                              ),
-                                              items: state.accounts
-                                                  .map(
-                                                    (acc) => DropdownMenuItem(
-                                                      value: acc.id,
-                                                      child: Text(
-                                                        acc.description,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                              onChanged: (val) => setState(
-                                                () => _selectedBankAccountId =
-                                                    val,
-                                              ),
-                                            );
-                                          }
-                                          return const CircularProgressIndicator();
-                                        },
-                                      ),
-                                ),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child:
-                                      BlocBuilder<
-                                        PaymentMethodBloc,
-                                        PaymentMethodState
-                                      >(
-                                        builder: (context, state) {
-                                          if (state is PaymentMethodLoaded) {
-                                            final bool exists = state.methods
-                                                .any(
-                                                  (m) =>
-                                                      m.id ==
-                                                      _selectedPaymentMethodId,
-                                                );
-                                            return DropdownButtonFormField<int>(
-                                              isExpanded: true,
-                                              initialValue: exists
-                                                  ? _selectedPaymentMethodId
-                                                  : null,
-                                              decoration: const InputDecoration(
-                                                labelText:
-                                                    'Forma de Pagto. Prevista (Opcional)',
-                                                prefixIcon: Icon(
-                                                  Icons.payments,
-                                                ),
-                                                border: OutlineInputBorder(),
-                                              ),
-                                              items: state.methods
-                                                  .map(
-                                                    (m) => DropdownMenuItem(
-                                                      value: m.id,
-                                                      child: Text(
-                                                        m.name,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                              onChanged: (val) => setState(
-                                                () => _selectedPaymentMethodId =
-                                                    val,
-                                              ),
-                                            );
-                                          }
-                                          return const CircularProgressIndicator();
-                                        },
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // SEÇÃO DE PARCELAMENTO (SUBGRID)
-                    if (!_isEditing) ...[
-                      _buildSectionTitle('Geração de Parcelas'),
-                      Card(
-                        color: context.appColors.surface,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: context.appColors.textMuted.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildTextField(
-                                      controller: _installmentsController,
-                                      label: 'Qtd. Parcelas',
-                                      icon: Icons.layers_outlined,
-                                      isNumeric: true,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true, // <-- MUDANÇA AQUI
-                                      initialValue: _installmentInterval,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Intervalo',
-                                        prefixIcon: Icon(Icons.update),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items:
-                                          [
-                                                'Diário',
-                                                'Semanal',
-                                                'Quinzenal',
-                                                'Mensal',
-                                              ]
-                                              .map(
-                                                (s) => DropdownMenuItem(
-                                                  value: s,
-                                                  child: Text(
-                                                    s,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              )
-                                              .toList(), // <-- MUDANÇA AQUI
-                                      onChanged: (val) => setState(
-                                        () => _installmentInterval = val!,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 55,
-                                      child: ElevatedButton.icon(
-                                        onPressed: _generatePreview,
-                                        icon: const Icon(
-                                          Icons.auto_awesome,
-                                          color: Colors.white,
-                                        ),
-                                        label: const Text(
-                                          'Gerar Previsão',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              context.appColors.info,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              if (_previewInstallments.isNotEmpty) ...[
-                                const SizedBox(height: 24),
-                                const Divider(),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Confirme ou altere as datas antes de salvar:',
-                                  style: TextStyle(
-                                    color: context.appColors.textMuted,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: context.appColors.textMuted
-                                          .withValues(alpha: 0.2),
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: DataTable(
-                                    headingRowColor: WidgetStateProperty.all(
-                                      context.appColors.background,
-                                    ),
-                                    columns: const [
-                                      DataColumn(label: Text('Documento')),
-                                      DataColumn(label: Text('Descrição')),
-                                      DataColumn(label: Text('Valor (R\$)')),
-                                      DataColumn(
-                                        label: Text(
-                                          'Vencimento (Clique p/ Editar)',
-                                        ),
-                                      ),
-                                    ],
-                                    rows: _previewInstallments.asMap().entries.map((
-                                      entry,
-                                    ) {
-                                      final index = entry.key;
-                                      final parc = entry.value;
-                                      final dateStr =
-                                          '${parc.dueDate.day.toString().padLeft(2, '0')}/${parc.dueDate.month.toString().padLeft(2, '0')}/${parc.dueDate.year}';
-
-                                      return DataRow(
-                                        cells: [
-                                          DataCell(
-                                            Text(
-                                              parc.id,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          DataCell(Text(parc.description)),
-                                          DataCell(
-                                            Text(
-                                              'R\$ ${parc.value.toStringAsFixed(2)}',
-                                            ),
-                                          ),
-                                          DataCell(
-                                            InkWell(
-                                              onTap: () =>
-                                                  _editPreviewDate(index),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    dateStr,
-                                                    style: TextStyle(
-                                                      color: context
-                                                          .appColors
-                                                          .primary,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Icon(
-                                                    Icons.edit_calendar,
-                                                    size: 16,
-                                                    color: context
-                                                        .appColors
-                                                        .primary,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    _buildSectionTitle('Observações Adicionais'),
-                    Card(
-                      color: context.appColors.surface,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: context.appColors.textMuted.withValues(
-                            alpha: 0.2,
-                          ),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: TextFormField(
-                          controller: _notesController,
-                          maxLines: 2,
-                          decoration: const InputDecoration(
-                            hintText: 'Detalhes...',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => _closeTab(context),
-                          child: const Text('Cancelar'),
-                        ),
-                        const SizedBox(width: 16),
-                        FilledButton.icon(
-                          onPressed: _isSaving ? null : _handleSave,
-                          icon: _isSaving
-                              ? const CircularProgressIndicator()
-                              : const Icon(Icons.save),
-                          label: Text(
-                            _isSaving ? 'Salvando...' : 'Salvar Documento(s)',
-                          ),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
-                            backgroundColor: widget.isReceivable
-                                ? context.appColors.success
-                                : context.appColors.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _handleSave() {
     if (!_formKey.currentState!.validate() ||
         _selectedDueDate == null ||
@@ -866,7 +263,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       return;
     }
 
-    // Trava de segurança: Se for cadastro novo, obriga a gerar a preview antes de salvar
     if (!_isEditing && _previewInstallments.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -879,23 +275,9 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       return;
     }
 
-    // Trava de segurança: Se for cadastro novo, obriga a gerar a preview antes de salvar
-    if (!_isEditing && _previewInstallments.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Por favor, clique em "Gerar Previsão" antes de salvar.',
-          ),
-          backgroundColor: context.appColors.error,
-        ),
-      );
-      return;
-    }
-
     setState(() => _isSaving = true);
 
     if (_isEditing) {
-      // MODO EDIÇÃO
       final valorTotal =
           double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0;
       final document = FinancialDocumentEntity(
@@ -911,7 +293,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         categoryId: _selectedCategoryId!,
         partnerId: _selectedPartnerId!,
         bankAccountId: _selectedBankAccountId,
-        paymentMethodId: _selectedPaymentMethodId, // NOVO
+        paymentMethodId: _selectedPaymentMethodId,
         status: widget.document!['status'] == 'paid'
             ? DocumentStatus.paid
             : DocumentStatus.pending,
@@ -919,7 +301,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
       );
       context.read<DocumentBloc>().add(UpdateDocument(document));
     } else {
-      // MODO CRIAÇÃO
       for (var doc in _previewInstallments) {
         final docToSave = FinancialDocumentEntity(
           id: doc.id,
@@ -932,7 +313,7 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
           categoryId: doc.categoryId,
           partnerId: doc.partnerId,
           bankAccountId: _selectedBankAccountId,
-          paymentMethodId: _selectedPaymentMethodId, // NOVO
+          paymentMethodId: _selectedPaymentMethodId,
           status: doc.status,
           notes: _notesController.text,
         );
@@ -947,20 +328,6 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
     } catch (_) {
       Navigator.of(context).pop();
     }
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: context.appColors.textTitle,
-        ),
-      ),
-    );
   }
 
   Widget _buildTextField({
@@ -985,13 +352,807 @@ class _DocumentFormPageState extends State<DocumentFormPage> {
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
         fillColor: readOnly
-            ? context.appColors.textMuted.withValues(alpha: 0.05)
+            ? context.appColors.textMuted.withOpacity(0.05)
             : null,
         filled: readOnly,
       ),
       validator: isRequired
           ? (value) => (value == null || value.isEmpty) ? 'Obrigatório' : null
           : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String pageTitle = _isEditing
+        ? 'Documento #${widget.document!['id']}'
+        : (widget.isReceivable
+              ? 'Nova Receita (Faturamento)'
+              : 'Novo Lançamento (Despesa)');
+
+    final formContent = BlocListener<DocumentBloc, DocumentState>(
+      listener: (context, state) {
+        if (state is DocumentError && _isSaving) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: context.appColors.error,
+            ),
+          );
+        } else if (state is DocumentLoaded && _isSaving) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Documentos salvos com sucesso!'),
+              backgroundColor: context.appColors.success,
+            ),
+          );
+          _closeTab(context);
+        }
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32.0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
+                    child: Text(
+                      'Informações Principais',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: context.appColors.textTitle,
+                      ),
+                    ),
+                  ),
+                  Card(
+                    color: context.appColors.surface,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: context.appColors.textMuted.withValues(
+                          alpha: 0.2,
+                        ),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 1,
+                                child: _buildTextField(
+                                  controller: TextEditingController(
+                                    text: _documentId,
+                                  ),
+                                  label: 'Nº Documento',
+                                  icon: Icons.tag,
+                                  readOnly: true,
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                flex: 3,
+                                child: _buildTextField(
+                                  controller: _descriptionController,
+                                  label: 'Descrição do Lançamento',
+                                  icon: Icons.description_outlined,
+                                  isRequired: true,
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              // ❌ IMPEDIR ALTERAÇÃO DO VALOR SE JÁ ESTIVER EDITANDO E TIVER PAGO ALGO
+                              Expanded(
+                                flex: 1,
+                                child: _buildTextField(
+                                  controller: _valueController,
+                                  label: 'Valor Total (R\$)',
+                                  icon: Icons.attach_money,
+                                  isRequired: true,
+                                  isNumeric: true,
+                                  readOnly: _isEditing,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: BlocBuilder<CategoryBloc, CategoryState>(
+                                  builder: (context, state) {
+                                    if (state is CategoryLoaded) {
+                                      final bool exists = state.categories.any(
+                                        (c) => c.id == _selectedCategoryId,
+                                      );
+                                      return DropdownButtonFormField<int>(
+                                        isExpanded: true,
+                                        initialValue: exists
+                                            ? _selectedCategoryId
+                                            : null,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Categoria',
+                                          prefixIcon: Icon(
+                                            Icons.category_outlined,
+                                          ),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: state.categories
+                                            .map(
+                                              (cat) => DropdownMenuItem(
+                                                value: cat.id,
+                                                child: Text(
+                                                  cat.name,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                        onChanged: (val) => setState(
+                                          () => _selectedCategoryId = val,
+                                        ),
+                                        validator: (val) =>
+                                            val == null ? 'Obrigatório' : null,
+                                      );
+                                    }
+                                    return const CircularProgressIndicator();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                child: BlocBuilder<PartnerBloc, PartnerState>(
+                                  builder: (context, state) {
+                                    if (state is PartnerLoaded) {
+                                      final bool exists = state.partners.any(
+                                        (p) => p.id == _selectedPartnerId,
+                                      );
+                                      return DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        initialValue: exists
+                                            ? _selectedPartnerId
+                                            : null,
+                                        decoration: InputDecoration(
+                                          labelText: widget.isReceivable
+                                              ? 'Cliente'
+                                              : 'Fornecedor',
+                                          prefixIcon: const Icon(
+                                            Icons.business,
+                                          ),
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        items: state.partners
+                                            .map(
+                                              (p) => DropdownMenuItem(
+                                                value: p.id,
+                                                child: Text(
+                                                  p.name,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                        onChanged: (val) => setState(
+                                          () => _selectedPartnerId = val,
+                                        ),
+                                        validator: (val) =>
+                                            val == null ? 'Obrigatório' : null,
+                                      );
+                                    }
+                                    return const CircularProgressIndicator();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () => _selectDate(context),
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      labelText: 'Data Base / Venc.',
+                                      prefixIcon: const Icon(
+                                        Icons.calendar_today,
+                                      ),
+                                      border: const OutlineInputBorder(),
+                                      errorText: _selectedDueDate == null
+                                          ? 'Obrigatório'
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      _selectedDueDate == null
+                                          ? 'Selecionar'
+                                          : '${_selectedDueDate!.day.toString().padLeft(2, '0')}/${_selectedDueDate!.month.toString().padLeft(2, '0')}/${_selectedDueDate!.year}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child:
+                                    BlocBuilder<
+                                      BankAccountBloc,
+                                      BankAccountState
+                                    >(
+                                      builder: (context, state) {
+                                        if (state is BankAccountLoaded) {
+                                          final bool exists = state.accounts
+                                              .any(
+                                                (a) =>
+                                                    a.id ==
+                                                    _selectedBankAccountId,
+                                              );
+                                          return DropdownButtonFormField<int>(
+                                            isExpanded: true,
+                                            initialValue: exists
+                                                ? _selectedBankAccountId
+                                                : null,
+                                            decoration: const InputDecoration(
+                                              labelText:
+                                                  'Conta Bancária Padrão (Opcional)',
+                                              prefixIcon: Icon(
+                                                Icons.account_balance,
+                                              ),
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            items: state.accounts
+                                                .map(
+                                                  (acc) => DropdownMenuItem(
+                                                    value: acc.id,
+                                                    child: Text(
+                                                      acc.description,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: (val) => setState(
+                                              () =>
+                                                  _selectedBankAccountId = val,
+                                            ),
+                                          );
+                                        }
+                                        return const CircularProgressIndicator();
+                                      },
+                                    ),
+                              ),
+                              const SizedBox(width: 24),
+                              Expanded(
+                                child:
+                                    BlocBuilder<
+                                      PaymentMethodBloc,
+                                      PaymentMethodState
+                                    >(
+                                      builder: (context, state) {
+                                        if (state is PaymentMethodLoaded) {
+                                          final bool exists = state.methods.any(
+                                            (m) =>
+                                                m.id ==
+                                                _selectedPaymentMethodId,
+                                          );
+                                          return DropdownButtonFormField<int>(
+                                            isExpanded: true,
+                                            initialValue: exists
+                                                ? _selectedPaymentMethodId
+                                                : null,
+                                            decoration: const InputDecoration(
+                                              labelText:
+                                                  'Forma de Pgto. Padrão (Opcional)',
+                                              prefixIcon: Icon(Icons.payments),
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            items: state.methods
+                                                .map(
+                                                  (m) => DropdownMenuItem(
+                                                    value: m.id,
+                                                    child: Text(
+                                                      m.name,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: (val) => setState(
+                                              () => _selectedPaymentMethodId =
+                                                  val,
+                                            ),
+                                          );
+                                        }
+                                        return const CircularProgressIndicator();
+                                      },
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  if (!_isEditing) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
+                      child: Text(
+                        'Geração de Parcelas',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: context.appColors.textTitle,
+                        ),
+                      ),
+                    ),
+                    Card(
+                      color: context.appColors.surface,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.2,
+                          ),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextField(
+                                    controller: _installmentsController,
+                                    label: 'Qtd. Parcelas',
+                                    icon: Icons.layers_outlined,
+                                    isNumeric: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    isExpanded: true,
+                                    initialValue: _installmentInterval,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Intervalo',
+                                      prefixIcon: Icon(Icons.update),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items:
+                                        [
+                                              'Diário',
+                                              'Semanal',
+                                              'Quinzenal',
+                                              'Mensal',
+                                            ]
+                                            .map(
+                                              (s) => DropdownMenuItem(
+                                                value: s,
+                                                child: Text(
+                                                  s,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                    onChanged: (val) => setState(
+                                      () => _installmentInterval = val!,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 55,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _generatePreview,
+                                      icon: const Icon(
+                                        Icons.auto_awesome,
+                                        color: Colors.white,
+                                      ),
+                                      label: const Text(
+                                        'Gerar Previsão',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: context.appColors.info,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            if (_previewInstallments.isNotEmpty) ...[
+                              const SizedBox(height: 24),
+                              const Divider(),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Confirme ou altere as datas antes de salvar:',
+                                style: TextStyle(
+                                  color: context.appColors.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: context.appColors.textMuted
+                                        .withOpacity(0.2),
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: DataTable(
+                                  headingRowColor: WidgetStateProperty.all(
+                                    context.appColors.background,
+                                  ),
+                                  columns: const [
+                                    DataColumn(label: Text('Documento')),
+                                    DataColumn(label: Text('Descrição')),
+                                    DataColumn(label: Text('Valor (R\$)')),
+                                    DataColumn(
+                                      label: Text(
+                                        'Vencimento (Clique p/ Editar)',
+                                      ),
+                                    ),
+                                  ],
+                                  rows: _previewInstallments.asMap().entries.map((
+                                    entry,
+                                  ) {
+                                    final index = entry.key;
+                                    final parc = entry.value;
+                                    final dateStr =
+                                        '${parc.dueDate.day.toString().padLeft(2, '0')}/${parc.dueDate.month.toString().padLeft(2, '0')}/${parc.dueDate.year}';
+
+                                    return DataRow(
+                                      cells: [
+                                        DataCell(
+                                          Text(
+                                            parc.id,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(Text(parc.description)),
+                                        DataCell(
+                                          Text(
+                                            'R\$ ${parc.value.toStringAsFixed(2)}',
+                                          ),
+                                        ),
+                                        DataCell(
+                                          InkWell(
+                                            onTap: () =>
+                                                _editPreviewDate(index),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  dateStr,
+                                                  style: TextStyle(
+                                                    color: context
+                                                        .appColors
+                                                        .primary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Icon(
+                                                  Icons.edit_calendar,
+                                                  size: 16,
+                                                  color:
+                                                      context.appColors.primary,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0, left: 8.0),
+                    child: Text(
+                      'Observações Adicionais',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: context.appColors.textTitle,
+                      ),
+                    ),
+                  ),
+                  Card(
+                    color: context.appColors.surface,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: context.appColors.textMuted.withValues(
+                          alpha: 0.2,
+                        ),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: TextFormField(
+                        controller: _notesController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          hintText: 'Detalhes...',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => _closeTab(context),
+                        child: const Text('Cancelar'),
+                      ),
+                      const SizedBox(width: 16),
+                      FilledButton.icon(
+                        onPressed: _isSaving ? null : _handleSave,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.save),
+                        label: Text(
+                          _isSaving ? 'Salvando...' : 'Salvar Documento(s)',
+                        ),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                          backgroundColor: widget.isReceivable
+                              ? context.appColors.success
+                              : context.appColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Se NÃO ESTÁ EDITANDO, renderiza normal
+    if (!_isEditing) {
+      return Scaffold(
+        backgroundColor: context.appColors.background,
+        appBar: AppBar(
+          backgroundColor: context.appColors.surface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          automaticallyImplyLeading: false,
+          title: Text(
+            pageTitle,
+            style: TextStyle(
+              color: context.appColors.textTitle,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: formContent,
+      );
+    }
+
+    // SE ESTIVER EDITANDO, RENDERIZA COM ABAS (Detalhes | Histórico)
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: context.appColors.background,
+        appBar: AppBar(
+          backgroundColor: context.appColors.surface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          automaticallyImplyLeading: false,
+          title: Text(
+            pageTitle,
+            style: TextStyle(
+              color: context.appColors.textTitle,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          bottom: TabBar(
+            labelColor: context.appColors.primary,
+            unselectedLabelColor: context.appColors.textMuted,
+            indicatorColor: context.appColors.primary,
+            indicatorWeight: 3,
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.edit_document),
+                text: 'Detalhes do Documento',
+              ),
+              Tab(icon: Icon(Icons.history), text: 'Histórico de Baixas'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            formContent, // Aba 1: O form normal
+            // Aba 2: Tabela de Histórico buscando direto no Repositório
+            FutureBuilder<List<SettlementEntity>>(
+              future: GetIt.instance<DocumentRepository>().getSettlements(
+                _documentId,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Erro ao carregar histórico: ${snapshot.error}',
+                      style: TextStyle(color: context.appColors.error),
+                    ),
+                  );
+                }
+
+                final history = snapshot.data ?? [];
+
+                if (history.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history_toggle_off,
+                          size: 64,
+                          color: context.appColors.textMuted.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nenhum pagamento registrado\npara este título.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: context.appColors.textMuted,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.appColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: context.appColors.border.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: DataTable(
+                            headingRowColor: WidgetStateProperty.all(
+                              context.appColors.background,
+                            ),
+                            columns: const [
+                              DataColumn(
+                                label: Text(
+                                  'Data da Baixa',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Valor Pago',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Forma de Pagto.',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Conta de Destino/Origem',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                            rows: history.map((h) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      '${h.paymentDate.day.toString().padLeft(2, '0')}/${h.paymentDate.month.toString().padLeft(2, '0')}/${h.paymentDate.year}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Text(
+                                      'R\$ ${h.amount.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        color: widget.isReceivable
+                                            ? context.appColors.success
+                                            : context.appColors.error,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(Text(h.methodName)),
+                                  DataCell(Text(h.bankName)),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
