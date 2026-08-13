@@ -91,7 +91,6 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
       _selectedDocument = doc;
       // 👇 Agora ele sugere pagar o SALDO (balance) e não o valor original (value)
       _amountController.text = doc.balance.toStringAsFixed(2);
-      _amountController.text = doc.value.toStringAsFixed(2);
       _paymentDate = DateTime.now();
       _selectedBankAccountId = doc.bankAccountId;
       _selectedPaymentMethodId = doc.paymentMethodId;
@@ -561,7 +560,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                   color: context.appColors.background,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Row(
+                                child: Column(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -573,6 +572,36 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                     ),
                                     Text(
                                       'R\$ ${_selectedDocument!.value.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.appColors.textTitle,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Valor em Aberto:',
+                                      style: TextStyle(
+                                        color: context.appColors.textBody,
+                                      ),
+                                    ),
+                                    Text(
+                                      'R\$ ${_selectedDocument!.balance.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.appColors.textTitle,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Valor Pago:',
+                                      style: TextStyle(
+                                        color: context.appColors.textBody,
+                                      ),
+                                    ),
+                                    Text(
+                                      'R\$ ${(_selectedDocument!.value - _selectedDocument!.balance).toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -621,10 +650,24 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                         prefixIcon: Icon(Icons.attach_money),
                                         border: OutlineInputBorder(),
                                       ),
-                                      validator: (val) =>
-                                          val == null || val.isEmpty
-                                          ? 'Obrigatório'
-                                          : null,
+                                      validator: (val) {
+                                        if (val == null || val.isEmpty) {
+                                          return 'Obrigatório';
+                                        }
+                                        final amt =
+                                            double.tryParse(
+                                              val.replaceAll(',', '.'),
+                                            ) ??
+                                            0.0;
+                                        if (amt <= 0) {
+                                          return 'Deve ser maior que zero';
+                                        }
+                                        if (_selectedDocument != null &&
+                                            amt > _selectedDocument!.balance) {
+                                          return 'Máx: R\$ ${_selectedDocument!.balance.toStringAsFixed(2)}';
+                                        }
+                                        return null;
+                                      },
                                     ),
                                   ),
                                 ],
