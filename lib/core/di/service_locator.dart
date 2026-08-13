@@ -3,7 +3,7 @@ import 'package:wialog_erp/core/database/database_connection.dart';
 import 'package:wialog_erp/features/auth/data/datasources/auth_data_source.dart';
 import 'package:wialog_erp/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:wialog_erp/features/auth/domain/repositories/auth_repository.dart';
-import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wialog_erp/features/finance/data/datasources/bank_account_datasource.dart';
 import 'package:wialog_erp/features/finance/data/datasources/category_datasource.dart';
 import 'package:wialog_erp/features/finance/data/datasources/document_data_source.dart';

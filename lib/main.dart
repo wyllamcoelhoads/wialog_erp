@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:desktop_window/desktop_window.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/core/theme/theme_cubit.dart';
-import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/bank_account/bank_account_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/category/category_event.dart';

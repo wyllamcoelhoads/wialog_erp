@@ -2,13 +2,76 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wialog_erp/core/theme/app_colors.dart';
 import 'package:wialog_erp/core/theme/theme_cubit.dart';
+import 'package:wialog_erp/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:wialog_erp/features/auth/presentation/bloc/auth_event.dart';
 import 'package:wialog_erp/features/finance/domain/entities/user_entity.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_bloc.dart';
 import 'package:wialog_erp/features/finance/presentation/bloc/user/user_event.dart';
 
-class PreferencesPage extends StatelessWidget {
+class PreferencesPage extends StatefulWidget {
   const PreferencesPage({super.key});
+
+  @override
+  State<PreferencesPage> createState() => _PreferencesPageState();
+}
+
+class _PreferencesPageState extends State<PreferencesPage> {
+  late String _selectedTheme;
+  bool _isLoading = false;
+  bool _hasChanges = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pega o tema atual do usuário logado ao abrir a tela
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      _selectedTheme = authState.user.theme;
+    } else {
+      _selectedTheme = 'light';
+    }
+  }
+
+  void _savePreferences() {
+    setState(() => _isLoading = true);
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final currentUser = authState.user;
+
+      // 1. Cria a cópia do usuário com o novo tema
+      final updatedUser = UserEntity(
+        id: currentUser.id,
+        employeeId: currentUser.employeeId,
+        employeeName: currentUser.employeeName,
+        email: currentUser.email,
+        password: currentUser.password,
+        roleId: currentUser.roleId,
+        roleName: currentUser.roleName,
+        isActive: currentUser.isActive,
+        customPermissions: currentUser.customPermissions,
+        theme: _selectedTheme, // AQUI ESTÁ A MUDANÇA PRO BANCO
+      );
+
+      // 2. Manda pro banco de dados (PostgreSQL) usando o UserBloc
+      context.read<UserBloc>().add(UpdateUser(updatedUser));
+
+      // 3. Atualiza a sessão atual na memória do app (AuthBloc)
+      context.read<AuthBloc>().add(UpdateCurrentUserData(updatedUser));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Preferências salvas com sucesso!'),
+          backgroundColor: context.appColors.success,
+        ),
+      );
+
+      setState(() {
+        _isLoading = false;
+        _hasChanges = false; // Tira o aviso de alterações pendentes
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,24 +86,67 @@ class PreferencesPage extends StatelessWidget {
     final isAdmin = roleName.toLowerCase().contains('admin');
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: context.appColors.background,
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Permissões e Preferências',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gerencie a aparência do sistema e consulte seus níveis de acesso.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            // CABEÇALHO COM BOTÃO DE SALVAR
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Permissões e Preferências',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: context.appColors.textTitle,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Gerencie a aparência do sistema e consulte seus acessos.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: context.appColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                FilledButton.icon(
+                  onPressed: (_hasChanges && !_isLoading)
+                      ? _savePreferences
+                      : null,
+                  icon: _isLoading
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: context.appColors.textTitle,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(Icons.save, color: context.appColors.textTitle),
+                  label: Text(
+                    _isLoading ? 'Salvando...' : 'Salvar Preferências',
+                    style: TextStyle(
+                      color: context.appColors.textTitle,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.appColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 32),
 
@@ -50,26 +156,55 @@ class PreferencesPage extends StatelessWidget {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: context.appColors.border, width: 1),
+                side: BorderSide(
+                  color: context.appColors.border.withValues(alpha: 0.3),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Preferências Visuais',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: context.appColors.textBody,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Preferências Visuais',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: context.appColors.textTitle,
+                          ),
+                        ),
+                        if (_hasChanges) ...[
+                          const SizedBox(width: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.appColors.warning.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Alterações não salvas',
+                              style: TextStyle(
+                                color: context.appColors.warning,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const Divider(),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(
-                        context.watch<ThemeCubit>().isDark
+                        _selectedTheme == 'dark'
                             ? Icons.dark_mode
                             : Icons.light_mode,
                         size: 32,
@@ -81,28 +216,20 @@ class PreferencesPage extends StatelessWidget {
                       ),
                       subtitle: Text(
                         'Altera as cores do sistema para reduzir o cansaço visual.',
-                        style: TextStyle(color: Colors.grey.shade600),
+                        style: TextStyle(color: context.appColors.textMuted),
                       ),
                       trailing: Switch(
-                        value: context.watch<ThemeCubit>().isDark,
+                        value: _selectedTheme == 'dark',
                         activeThumbColor: context.appColors.primary,
                         onChanged: (val) {
-                          // 1. Troca a cor na tela imediatamente
-                          context.read<ThemeCubit>().toggleTheme();
-
-                          // 2. Salva no banco de dados para os próximos logins!
-                          final updatedUser = UserEntity(
-                            id: currentUser.id,
-                            employeeId: currentUser.employeeId,
-                            email: currentUser.email,
-                            password: currentUser.password,
-                            roleId: currentUser.roleId,
-                            isActive: currentUser.isActive,
-                            theme: val ? 'dark' : 'light',
-                            customPermissions: currentUser.customPermissions,
+                          setState(() {
+                            _selectedTheme = val ? 'dark' : 'light';
+                            _hasChanges = true; // Libera o botão de salvar
+                          });
+                          // Muda na tela na hora para o usuário ver como fica (Pré-visualização)
+                          context.read<ThemeCubit>().setThemeFromPreference(
+                            _selectedTheme,
                           );
-                          // Envia o update silenciosamente para o DB
-                          context.read<UserBloc>().add(UpdateUser(updatedUser));
                         },
                       ),
                     ),
@@ -118,7 +245,9 @@ class PreferencesPage extends StatelessWidget {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: context.appColors.border, width: 1),
+                side: BorderSide(
+                  color: context.appColors.border.withValues(alpha: 0.3),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -130,7 +259,7 @@ class PreferencesPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        color: context.appColors.textTitle,
                       ),
                     ),
                     const Divider(),
@@ -146,11 +275,11 @@ class PreferencesPage extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Seu Cargo Base:',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey,
+                                color: context.appColors.textMuted,
                               ),
                             ),
                             Text(
@@ -158,9 +287,7 @@ class PreferencesPage extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge?.color,
+                                color: context.appColors.textTitle,
                               ),
                             ),
                           ],
@@ -184,7 +311,7 @@ class PreferencesPage extends StatelessWidget {
                               Icons.admin_panel_settings,
                               color: context.appColors.primary,
                             ),
-                            SizedBox(width: 16),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: Text(
                                 'Você possui o perfil de Administrador. Suas permissões não podem ser restritas, você tem acesso irrestrito a todas as configurações de negócio da plataforma.',
