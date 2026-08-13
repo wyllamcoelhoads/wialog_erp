@@ -10,13 +10,29 @@ abstract class DocumentEvent extends Equatable {
 class LoadDocuments extends DocumentEvent {
   final DocumentType? type;
   final String? query;
-  final DateTime? startDate; // NOVO: Filtro de data inicial
-  final DateTime? endDate; // NOVO: Filtro de data final
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool filterByIssueDate;
+  final bool isOverdue;
 
-  const LoadDocuments({this.type, this.query, this.startDate, this.endDate});
+  const LoadDocuments({
+    this.type,
+    this.query,
+    this.startDate,
+    this.endDate,
+    this.filterByIssueDate = false,
+    this.isOverdue = false,
+  });
 
   @override
-  List<Object?> get props => [type, query, startDate, endDate];
+  List<Object?> get props => [
+    type,
+    query,
+    startDate,
+    endDate,
+    filterByIssueDate,
+    isOverdue,
+  ];
 }
 
 class AddDocument extends DocumentEvent {
@@ -41,7 +57,6 @@ class DeleteDocument extends DocumentEvent {
   List<Object?> get props => [id, type];
 }
 
-// NOVO: Evento disparado quando o usuário clica em "Confirmar Baixa"
 class SettleDocument extends DocumentEvent {
   final String documentId;
   final DocumentType type;
@@ -70,5 +85,4 @@ class SettleDocument extends DocumentEvent {
   ];
 }
 
-// NOVO EVENTO: Usado para limpar a tabela ao trocar de aba
 class ClearDocuments extends DocumentEvent {}

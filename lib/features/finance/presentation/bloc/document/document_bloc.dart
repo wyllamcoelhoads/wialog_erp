@@ -7,74 +7,106 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
   final DocumentRepository repository;
 
   DocumentBloc(this.repository) : super(DocumentInitial()) {
-    // NOVO: Volta a tela para o estado vazio inicial
-    on<ClearDocuments>((event, emit) {
+    on<LoadDocuments>(_onLoadDocuments);
+    on<AddDocument>(_onAddDocument);
+    on<UpdateDocument>(_onUpdateDocument);
+    on<DeleteDocument>(_onDeleteDocument);
+    on<SettleDocument>(_onSettleDocument);
+    on<ClearDocuments>(
+      (event, emit) => emit(DocumentInitial()),
+    ); // Garante o reset da tela
+  }
+
+  Future<void> _onLoadDocuments(
+    LoadDocuments event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      final documents = await repository.getDocuments(
+        type: event.type,
+        query: event.query,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        filterByIssueDate: event.filterByIssueDate,
+        isOverdue: event.isOverdue,
+      );
+      // 👇 CORREÇÃO: Enviando os argumentos na posição correta (sem nomeá-los)
+      emit(DocumentLoaded(documents, event.type!));
+    } catch (e) {
+      emit(DocumentError('Erro ao carregar documentos: $e'));
+    }
+  }
+
+  Future<void> _onAddDocument(
+    AddDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      await repository.createDocument(event.document);
+      final documents = await repository.getDocuments(
+        type: event.document.type,
+      );
+      // 👇 CORREÇÃO: Argumentos posicionais
+      emit(DocumentLoaded(documents, event.document.type));
+    } catch (e) {
+      emit(DocumentError('Erro ao adicionar documento: $e'));
+    }
+  }
+
+  Future<void> _onUpdateDocument(
+    UpdateDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      await repository.updateDocument(event.document);
+      final documents = await repository.getDocuments(
+        type: event.document.type,
+      );
+      // 👇 CORREÇÃO: Argumentos posicionais
+      emit(DocumentLoaded(documents, event.document.type));
+    } catch (e) {
+      emit(DocumentError('Erro ao atualizar documento: $e'));
+    }
+  }
+
+  Future<void> _onDeleteDocument(
+    DeleteDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      await repository.deleteDocument(event.id);
       emit(DocumentInitial());
-    });
+    } catch (e) {
+      emit(DocumentError('Erro ao excluir documento: $e'));
+    }
+  }
 
-    on<LoadDocuments>((event, emit) async {
-      emit(DocumentLoading());
-      try {
-        final docs = await repository.getDocuments(
-          type: event.type,
-          query: event.query,
-          startDate: event.startDate,
-          endDate: event.endDate,
-        );
-        // MUDANÇA: Agora o BLoC avisa de qual tipo são esses documentos
-        emit(DocumentLoaded(docs, event.type!));
-      } catch (e) {
-        emit(DocumentError(e.toString()));
-      }
-    });
+  Future<void> _onSettleDocument(
+    SettleDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentLoading());
+    try {
+      // 👇 CORREÇÃO: Função apenas executa a baixa no banco (não retorna um novo documento)
+      await repository.settleDocument(
+        event.documentId,
+        event.bankAccountId,
+        event.paymentMethodId,
+        event.amount,
+        event.paymentDate,
+      );
 
-    on<AddDocument>((event, emit) async {
-      emit(DocumentLoading());
-      try {
-        await repository.createDocument(event.document);
-        add(LoadDocuments(type: event.document.type));
-      } catch (e) {
-        emit(DocumentError(e.toString()));
-      }
-    });
+      // Recarrega a lista para mostrar o novo status e zerar o painel da esquerda
+      final documents = await repository.getDocuments(type: event.type);
 
-    on<UpdateDocument>((event, emit) async {
-      emit(DocumentLoading());
-      try {
-        await repository.updateDocument(event.document);
-        add(LoadDocuments(type: event.document.type));
-      } catch (e) {
-        emit(DocumentError(e.toString()));
-      }
-    });
-
-    on<DeleteDocument>((event, emit) async {
-      emit(DocumentLoading());
-      try {
-        await repository.deleteDocument(event.id);
-        add(LoadDocuments(type: event.type));
-      } catch (e) {
-        emit(DocumentError(e.toString()));
-      }
-    });
-
-    // NOVO: Intercepta a tentativa de baixa
-    on<SettleDocument>((event, emit) async {
-      emit(DocumentLoading());
-      try {
-        await repository.settleDocument(
-          event.documentId,
-          event.bankAccountId,
-          event.paymentMethodId,
-          event.amount,
-          event.paymentDate,
-        );
-        add(
-          LoadDocuments(type: event.type),
-        ); // Recarrega a tabela mostrando o título como "Pago"
-      } catch (e) {
-        emit(DocumentError('Erro na baixa: $e'));
-      }
-    });
+      // 👇 CORREÇÃO: Argumentos posicionais
+      emit(DocumentLoaded(documents, event.type));
+    } catch (e) {
+      emit(DocumentError('Erro ao processar baixa do documento: $e'));
+    }
   }
 }

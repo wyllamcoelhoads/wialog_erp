@@ -6,13 +6,14 @@ abstract class DocumentDataSource {
   Future<List<DocumentModel>> getDocuments({
     DocumentType? type,
     String? query,
-    DateTime? startDate, // NOVO: Adicionado aqui!
-    DateTime? endDate, // NOVO: Adicionado aqui!
+    DateTime? startDate,
+    DateTime? endDate,
+    bool filterByIssueDate = false, // NOVO: Filtro de Emissão
+    bool isOverdue = false, // NOVO: Apenas Vencidos
   });
   Future<DocumentModel> createDocument(DocumentModel document);
   Future<DocumentModel> updateDocument(DocumentModel document);
   Future<void> deleteDocument(String id);
-  // NOVO: Função de Baixa (Liquidação)
   Future<void> settleDocument(
     String id,
     int bankAccountId,
@@ -32,6 +33,8 @@ class DocumentPostgresDataSource implements DocumentDataSource {
     String? query,
     DateTime? startDate,
     DateTime? endDate,
+    bool filterByIssueDate = false,
+    bool isOverdue = false,
   }) async {
     String sql = '''
       SELECT d.*, p.name as partner_name, c.name as category_name,
@@ -50,25 +53,34 @@ class DocumentPostgresDataSource implements DocumentDataSource {
       params['type'] = type.name;
     }
 
-    // Busca exata pelo ID ou busca aproximada pelo nome/descrição
+    // Busca exata pelo ID ou aproximada pelo nome/CPF/CNPJ do parceiro
     if (query != null && query.isNotEmpty) {
       sql +=
-          " AND (d.id = @queryId OR d.description ILIKE @query OR p.name ILIKE @query)";
+          " AND (d.id = @queryId OR d.description ILIKE @query OR p.name ILIKE @query OR p.document ILIKE @query)";
       params['queryId'] = query;
       params['query'] = '%$query%';
     }
 
-    // Filtro por Período de Vencimento
+    // Filtro Flexível: Data de Vencimento OU Data de Emissão
+    String dateField = filterByIssueDate ? 'd.issue_date' : 'd.due_date';
+
     if (startDate != null) {
-      sql += " AND d.due_date >= @startDate";
+      sql += " AND $dateField >= @startDate";
       params['startDate'] = startDate.toIso8601String().split('T')[0];
     }
     if (endDate != null) {
-      sql += " AND d.due_date <= @endDate";
+      sql += " AND $dateField <= @endDate";
       params['endDate'] = endDate.toIso8601String().split('T')[0];
     }
 
-    sql += " ORDER BY d.due_date ASC";
+    // Flag: Apenas Títulos Vencidos
+    if (isOverdue) {
+      sql +=
+          " AND d.due_date < CURRENT_DATE AND d.status != 'paid' AND d.status != 'canceled'";
+    }
+
+    // Limite de segurança de 200 registros para evitar quebra de memória caso pesquise "Todos"
+    sql += " ORDER BY d.due_date ASC LIMIT 200";
 
     final result = await dbConnection.query(sql, params);
     return result
@@ -111,7 +123,6 @@ class DocumentPostgresDataSource implements DocumentDataSource {
     await dbConnection.query(sql, {'id': id});
   }
 
-  // === NOVO: A LÓGICA DE BAIXA DO TÍTULO E ATUALIZAÇÃO DO SALDO ===
   @override
   Future<void> settleDocument(
     String id,
@@ -120,7 +131,6 @@ class DocumentPostgresDataSource implements DocumentDataSource {
     double amount,
     DateTime paymentDate,
   ) async {
-    // 1. Iniciamos uma transação manual. Se algo der erro no meio, ele cancela tudo (Rollback).
     await dbConnection.query('BEGIN');
     try {
       final docResult = await dbConnection.query(
@@ -135,7 +145,6 @@ class DocumentPostgresDataSource implements DocumentDataSource {
 
       final isReceivable = row['type'] == 'receivable';
 
-      // 2. Atualiza o Título (Zera o saldo, muda para 'paid' e vincula banco/moeda)
       await dbConnection.query(
         '''
         UPDATE financial_documents 
@@ -151,7 +160,6 @@ class DocumentPostgresDataSource implements DocumentDataSource {
         },
       );
 
-      // 3. Atualiza o Saldo da Conta Bancária (+ se for receita, - se for despesa)
       final operator = isReceivable ? '+' : '-';
       await dbConnection.query(
         '''
@@ -162,11 +170,10 @@ class DocumentPostgresDataSource implements DocumentDataSource {
         {'amount': amount, 'bank_id': bankAccountId},
       );
 
-      // 4. Confirma as duas operações no banco
       await dbConnection.query('COMMIT');
     } catch (e) {
       await dbConnection.query('ROLLBACK');
-      rethrow; // Repassa o erro para a tela avisar o usuário
+      rethrow;
     }
   }
 }

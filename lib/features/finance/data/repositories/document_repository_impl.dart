@@ -14,12 +14,16 @@ class DocumentRepositoryImpl implements DocumentRepository {
     String? query,
     DateTime? startDate,
     DateTime? endDate,
+    bool filterByIssueDate = false,
+    bool isOverdue = false,
   }) async {
     return await dataSource.getDocuments(
       type: type,
       query: query,
       startDate: startDate,
       endDate: endDate,
+      filterByIssueDate: filterByIssueDate,
+      isOverdue: isOverdue,
     );
   }
 

@@ -15,7 +15,7 @@ import '../bloc/payment_method/payment_method_event.dart';
 import '../bloc/payment_method/payment_method_state.dart';
 
 class DocumentSettleWidget extends StatefulWidget {
-  final DocumentType type; // Define se é Pagar ou Receber
+  final DocumentType type;
 
   const DocumentSettleWidget({super.key, required this.type});
 
@@ -26,6 +26,7 @@ class DocumentSettleWidget extends StatefulWidget {
 class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
   FinancialDocumentEntity? _selectedDocument;
 
+  // Controles do Formulário de Baixa
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   DateTime _paymentDate = DateTime.now();
@@ -33,14 +34,20 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
   int? _selectedPaymentMethodId;
   bool _isProcessing = false;
 
+  // Controles do Filtro de Pesquisa Avançada
+  final _searchController = TextEditingController();
+  bool _searchAll = false;
+  bool _filterByIssueDate = false;
+  bool _isOverdue = false;
+  DateTimeRange? _selectedDateRange;
+
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
+    // Limpa a tela de pesquisa ao abrir (Força o usuário a pesquisar antes)
+    context.read<DocumentBloc>().add(ClearDocuments());
 
-  void _loadData() {
-    context.read<DocumentBloc>().add(LoadDocuments(type: widget.type));
+    // Carrega bancos e meios de pagamento em background para o formulário
     context.read<BankAccountBloc>().add(const LoadBankAccounts());
     context.read<PaymentMethodBloc>().add(const LoadPaymentMethods());
   }
@@ -48,7 +55,35 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
   @override
   void dispose() {
     _amountController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _loadData() {
+    // Trava de segurança: obriga a digitar o nome se não marcou "Pesquisar Todos"
+    if (!_searchAll && _searchController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Informe o nome do parceiro/ID ou marque a flag "Listar Todos".',
+          ),
+          backgroundColor: context.appColors.warning,
+        ),
+      );
+      return;
+    }
+
+    // Dispara a busca com todos os parâmetros do painel
+    context.read<DocumentBloc>().add(
+      LoadDocuments(
+        type: widget.type,
+        query: _searchController.text,
+        startDate: _selectedDateRange?.start,
+        endDate: _selectedDateRange?.end,
+        filterByIssueDate: _filterByIssueDate,
+        isOverdue: _isOverdue,
+      ),
+    );
   }
 
   void _selectDocument(FinancialDocumentEntity doc) {
@@ -61,7 +96,27 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
     });
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: _selectedDateRange,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(primary: context.appColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDateRange = picked);
+    }
+  }
+
+  Future<void> _pickPaymentDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _paymentDate,
@@ -132,13 +187,11 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
         } else if (state is DocumentLoaded && _isProcessing) {
           setState(() {
             _isProcessing = false;
-            _selectedDocument = null; // Limpa a seleção após o sucesso
+            _selectedDocument = null;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                '$actionLabel processado com sucesso! O saldo foi atualizado.',
-              ),
+              content: Text('$actionLabel processado com sucesso!'),
               backgroundColor: context.appColors.success,
             ),
           );
@@ -150,40 +203,201 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ==========================================
-            // LADO ESQUERDO: LISTA DE PENDENTES
+            // LADO ESQUERDO: FILTROS + LISTA
             // ==========================================
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Container(
                 decoration: BoxDecoration(
                   color: context.appColors.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: context.appColors.textMuted.withOpacity(0.2),
+                    color: context.appColors.border.withValues(alpha: 0.2),
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'Títulos Pendentes',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: context.appColors.textTitle,
+                    // PAINEL DE FILTROS AVANÇADOS
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.appColors.background.withValues(
+                          alpha: 0.5,
                         ),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  enabled: !_searchAll,
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Nome/Documento do Parceiro ou Nº do Título...',
+                                    prefixIcon: const Icon(Icons.search),
+                                    border: const OutlineInputBorder(),
+                                    isDense: true,
+                                    filled: _searchAll,
+                                    fillColor: _searchAll
+                                        ? Colors.grey.shade200
+                                        : context.appColors.surface,
+                                  ),
+                                  onSubmitted: (_) => _loadData(),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Row(
+                                children: [
+                                  Switch(
+                                    value: _searchAll,
+                                    activeThumbColor: context.appColors.primary,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _searchAll = val;
+                                        if (val) _searchController.clear();
+                                      });
+                                    },
+                                  ),
+                                  Text(
+                                    'Listar Todos',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: context.appColors.textTitle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<bool>(
+                                  initialValue: _filterByIssueDate,
+                                  decoration: InputDecoration(
+                                    border: const OutlineInputBorder(),
+                                    isDense: true,
+                                    filled: true,
+                                    fillColor: context.appColors.surface,
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: false,
+                                      child: Text('Filtrar por Vencimento'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: true,
+                                      child: Text('Filtrar por Emissão'),
+                                    ),
+                                  ],
+                                  onChanged: (val) =>
+                                      setState(() => _filterByIssueDate = val!),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _pickDateRange,
+                                  icon: const Icon(Icons.calendar_month),
+                                  label: Text(
+                                    _selectedDateRange == null
+                                        ? 'Período: Qualquer'
+                                        : '${_selectedDateRange!.start.day.toString().padLeft(2, '0')}/${_selectedDateRange!.start.month.toString().padLeft(2, '0')} até ${_selectedDateRange!.end.day.toString().padLeft(2, '0')}/${_selectedDateRange!.end.month.toString().padLeft(2, '0')}',
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 18,
+                                    ),
+                                    backgroundColor: context.appColors.surface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _isOverdue,
+                                    activeColor: context.appColors.error,
+                                    onChanged: (val) =>
+                                        setState(() => _isOverdue = val!),
+                                  ),
+                                  Text(
+                                    'Apenas Títulos Vencidos/Atrasados',
+                                    style: TextStyle(
+                                      color: context.appColors.error,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              FilledButton.icon(
+                                onPressed:
+                                    context.watch<DocumentBloc>().state
+                                        is DocumentLoading
+                                    ? null
+                                    : _loadData,
+                                icon: const Icon(Icons.manage_search),
+                                label: const Text('Aplicar Filtros'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: context.appColors.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     const Divider(height: 1),
+
+                    // LISTA DE RESULTADOS
                     Expanded(
                       child: BlocBuilder<DocumentBloc, DocumentState>(
                         builder: (context, state) {
-                          if (state is DocumentLoading)
+                          if (state is DocumentInitial) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.manage_search,
+                                    size: 64,
+                                    color: context.appColors.textMuted
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Utilize os filtros acima e clique em "Aplicar Filtros"\npara carregar os títulos pendentes.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: context.appColors.textMuted,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          if (state is DocumentLoading) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
+                          }
                           if (state is DocumentLoaded &&
                               state.type == widget.type) {
                             // Filtra apenas os que NÃO estão pagos ou cancelados
@@ -198,7 +412,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                             if (pendingDocs.isEmpty) {
                               return Center(
                                 child: Text(
-                                  'Nenhum título pendente.',
+                                  'Nenhum título pendente encontrado para este filtro.',
                                   style: TextStyle(
                                     color: context.appColors.textMuted,
                                   ),
@@ -222,15 +436,15 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
 
                                 return ListTile(
                                   selected: isSelected,
-                                  selectedTileColor: primaryColor.withOpacity(
-                                    0.1,
+                                  selectedTileColor: primaryColor.withValues(
+                                    alpha: 0.1,
                                   ),
                                   leading: CircleAvatar(
                                     backgroundColor: isLate
-                                        ? context.appColors.error.withOpacity(
-                                            0.2,
+                                        ? context.appColors.error.withValues(
+                                            alpha: 0.2,
                                           )
-                                        : primaryColor.withOpacity(0.2),
+                                        : primaryColor.withValues(alpha: 0.2),
                                     child: Icon(
                                       isLate
                                           ? Icons.warning_amber
@@ -277,7 +491,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
             // LADO DIREITO: FORMULÁRIO DE BAIXA
             // ==========================================
             Expanded(
-              flex: 3,
+              flex: 4,
               child: _selectedDocument == null
                   ? Center(
                       child: Column(
@@ -286,7 +500,9 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                           Icon(
                             Icons.touch_app,
                             size: 64,
-                            color: context.appColors.textMuted.withOpacity(0.5),
+                            color: context.appColors.textMuted.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -306,7 +522,9 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: context.appColors.textMuted.withOpacity(0.2),
+                          color: context.appColors.border.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Padding(
@@ -366,7 +584,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                 children: [
                                   Expanded(
                                     child: InkWell(
-                                      onTap: _pickDate,
+                                      onTap: _pickPaymentDate,
                                       child: InputDecorator(
                                         decoration: const InputDecoration(
                                           labelText: 'Data da Baixa',
@@ -420,7 +638,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                     );
                                     return DropdownButtonFormField<int>(
                                       isExpanded: true,
-                                      value: exists
+                                      initialValue: exists
                                           ? _selectedBankAccountId
                                           : null,
                                       decoration: const InputDecoration(
@@ -433,7 +651,10 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                           .map(
                                             (acc) => DropdownMenuItem(
                                               value: acc.id,
-                                              child: Text(acc.description),
+                                              child: Text(
+                                                acc.description,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
                                           )
                                           .toList(),
@@ -463,7 +684,7 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                     );
                                     return DropdownButtonFormField<int>(
                                       isExpanded: true,
-                                      value: exists
+                                      initialValue: exists
                                           ? _selectedPaymentMethodId
                                           : null,
                                       decoration: const InputDecoration(
@@ -475,7 +696,10 @@ class _DocumentSettleWidgetState extends State<DocumentSettleWidget> {
                                           .map(
                                             (m) => DropdownMenuItem(
                                               value: m.id,
-                                              child: Text(m.name),
+                                              child: Text(
+                                                m.name,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
                                           )
                                           .toList(),

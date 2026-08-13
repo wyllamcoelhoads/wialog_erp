@@ -6,6 +6,8 @@ abstract class DocumentRepository {
     String? query,
     DateTime? startDate,
     DateTime? endDate,
+    bool filterByIssueDate = false,
+    bool isOverdue = false,
   });
   Future<FinancialDocumentEntity> createDocument(
     FinancialDocumentEntity document,
